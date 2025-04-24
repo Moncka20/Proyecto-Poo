@@ -44,15 +44,25 @@ public class Main {
         // Obtener canción por ID
         get("/canciones/:id", (request, response) -> {
             response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
-            Cancion encontrada = CancionBD.canciones.stream()
-                    .filter(c -> c.getId() == id)
-                    .findFirst()
-                    .orElse(null);
+            String id = request.params(":id");
 
-            if (encontrada != null) {
-                return mapper.writeValueAsString(encontrada);
-            } else {
+            if (id == null) {
+                response.status(400);
+                return mapper.writeValueAsString(new mensaje("ID no proporcionado", ""));
+            }
+
+            Cancion cancion = null;
+            for (Cancion c : CancionBD.canciones) {
+                if (c.getId() == Integer.parseInt(id)) {
+                    cancion = c;
+                    break;
+                }
+            }
+
+            if (cancion != null) {
+                return mapper.writeValueAsString(cancion);
+            }
+            else {
                 response.status(404);
                 return mapper.writeValueAsString(new mensaje("Canción no encontrada", ""));
             }
@@ -112,14 +122,25 @@ public class Main {
         // Obtener artista por ID
         get("/artistas/:id", (request, response) -> {
             response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
-            Artista encontrado = ArtistaBD.artistas.stream()
-                    .filter(a -> a.getId() == id)
-                    .findFirst()
-                    .orElse(null);
-            if (encontrado != null) {
-                return mapper.writeValueAsString(encontrado);
-            } else {
+            String id = request.params(":id");
+
+            if (id == null) {
+                response.status(400);
+                return mapper.writeValueAsString(new mensaje("ID no proporcionado", ""));
+            }
+
+            Artista artista = null;
+            for (Artista a : ArtistaBD.artistas) {
+                if (a.getId() == Integer.parseInt(id)) {
+                    artista = a;
+                    break;
+                }
+            }
+
+            if (artista != null) {
+                return mapper.writeValueAsString(artista);
+            }
+            else {
                 response.status(404);
                 return mapper.writeValueAsString(new mensaje("Artista no encontrado", ""));
             }
