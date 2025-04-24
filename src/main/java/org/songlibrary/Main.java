@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.songlibrary.modelos.Cancion;
 import org.songlibrary.modelos.CancionBD;
 import org.songlibrary.modelos.mensaje;
+import org.songlibrary.modelos.Artista;
+import org.songlibrary.modelos.ArtistaBD;
 
 import static spark.Spark.*;
 
@@ -19,8 +21,10 @@ public class Main {
         // Ruta de prueba
         get("/", (request, response) -> {
             response.type("application/json");
-            return "{\"mensaje\": \"API de Canciones funcionando\"}";
+            return "{\"mensaje\": \"funcionando\"}";
         });
+
+        //Objeto Cancion
 
         // Crear una canción
         post("/canciones", (request, response) -> {
@@ -87,5 +91,73 @@ public class Main {
             response.status(404);
             return mapper.writeValueAsString(new mensaje("Canción no encontrada", ""));
         });
+
+        //Objeto Artista
+
+        // Crear un artista
+        post("/artistas", (request, response) -> {
+            response.type("application/json");
+            Artista artista = mapper.readValue(request.body(), Artista.class);
+            artista.setId(ArtistaBD.autoId++);
+            ArtistaBD.artistas.add(artista);
+            return mapper.writeValueAsString(new mensaje("Artista agregado", request.body()));
+        });
+
+        // Obtener todos los artistas
+        get("/artistas", (request, response) -> {
+            response.type("application/json");
+            return mapper.writeValueAsString(ArtistaBD.artistas);
+        });
+
+        // Obtener artista por ID
+        get("/artistas/:id", (request, response) -> {
+            response.type("application/json");
+            int id = Integer.parseInt(request.params(":id"));
+            Artista encontrado = ArtistaBD.artistas.stream()
+                    .filter(a -> a.getId() == id)
+                    .findFirst()
+                    .orElse(null);
+            if (encontrado != null) {
+                return mapper.writeValueAsString(encontrado);
+            } else {
+                response.status(404);
+                return mapper.writeValueAsString(new mensaje("Artista no encontrado", ""));
+            }
+        });
+
+        // Actualizar artista
+        put("/artistas/:id", (request, response) -> {
+            response.type("application/json");
+            int id = Integer.parseInt(request.params(":id"));
+            Artista actualizado = mapper.readValue(request.body(), Artista.class);
+            actualizado.setId(id);
+
+            for (int i = 0; i < ArtistaBD.artistas.size(); i++) {
+                if (ArtistaBD.artistas.get(i).getId() == id) {
+                    ArtistaBD.artistas.set(i, actualizado);
+                    return mapper.writeValueAsString(new mensaje("Artista actualizado", ""));
+                }
+            }
+
+            response.status(404);
+            return mapper.writeValueAsString(new mensaje("Artista no encontrado", ""));
+        });
+
+        // Eliminar artista
+        delete("/artistas/:id", (request, response) -> {
+            response.type("application/json");
+            int id = Integer.parseInt(request.params(":id"));
+
+            for (int i = 0; i < ArtistaBD.artistas.size(); i++) {
+                if (ArtistaBD.artistas.get(i).getId() == id) {
+                    ArtistaBD.artistas.remove(i);
+                    return mapper.writeValueAsString(new mensaje("Artista eliminado", ""));
+                }
+            }
+
+            response.status(404);
+            return mapper.writeValueAsString(new mensaje("Artista no encontrado", ""));
+        });
+
     }
 }
