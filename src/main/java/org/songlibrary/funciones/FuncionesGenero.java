@@ -9,7 +9,7 @@ import static spark.Spark.*;
 
 public class FuncionesGenero {
 
-    public static void configurarFunciones(ObjectMapper mapper) {
+    public static void FuncionesCRUD(ObjectMapper mapper) {
 
         // Crear un género
         post("/generos", (request, response) -> {

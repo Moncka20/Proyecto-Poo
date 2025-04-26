@@ -9,7 +9,7 @@ import static spark.Spark.*;
 
 public class FuncionesCancion {
 
-    public static void configurarFunciones(ObjectMapper mapper) {
+    public static void FuncionesCRUD(ObjectMapper mapper) {
 
         // Crear una canción
         post("/canciones", (request, response) -> {

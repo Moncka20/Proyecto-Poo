@@ -2,14 +2,14 @@ package org.songlibrary.funciones;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.songlibrary.modelos.ProductorMusical;
-import org.songlibrary.modelos.ProductorMusicalBD;
+import org.songlibrary.BD.ProductorMusicalBD;
 import org.songlibrary.modelos.mensaje;
 
 import static spark.Spark.*;
 
 public class FuncionesProductor {
 
-    public static void configurarFunciones(ObjectMapper mapper) {
+    public static void FuncionesCRUD(ObjectMapper mapper) {
 
         // Crear un productor musical
         post("/productores", (request, response) -> {

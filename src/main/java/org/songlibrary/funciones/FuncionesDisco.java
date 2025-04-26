@@ -9,7 +9,7 @@ import static spark.Spark.*;
 
 public class FuncionesDisco {
 
-    public static void configurarFunciones(ObjectMapper mapper) {
+    public static void FuncionesCRUD(ObjectMapper mapper) {
 
         // Crear un disco
         post("/discos", (request, response) -> {

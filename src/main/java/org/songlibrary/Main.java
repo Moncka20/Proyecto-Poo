@@ -20,11 +20,11 @@ public class Main {
         });
 
         // Cargar las funciones de cada modelo
-        FuncionesCancion.configurarFunciones(mapper);
-        FuncionesArtista.configurarFunciones(mapper);
-        FuncionesDisco.configurarFunciones(mapper);
-        FuncionesGenero.configurarFunciones(mapper);
-        FuncionesPodcast.configurarFunciones(mapper);
-        FuncionesProductor.configurarFunciones(mapper);
+        FuncionesCancion.FuncionesCRUD(mapper);
+        FuncionesArtista.FuncionesCRUD(mapper);
+        FuncionesDisco.FuncionesCRUD(mapper);
+        FuncionesGenero.FuncionesCRUD(mapper);
+        FuncionesPodcast.FuncionesCRUD(mapper);
+        FuncionesProductor.FuncionesCRUD(mapper);
     }
 }

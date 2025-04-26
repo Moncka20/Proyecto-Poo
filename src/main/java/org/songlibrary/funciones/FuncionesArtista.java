@@ -9,7 +9,7 @@ import static spark.Spark.*;
 
 public class FuncionesArtista {
 
-    public static void configurarFunciones(ObjectMapper mapper) {
+    public static void FuncionesCRUD(ObjectMapper mapper) {
 
         // Crear un artista
         post("/artistas", (request, response) -> {

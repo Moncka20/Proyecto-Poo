@@ -2,14 +2,14 @@ package org.songlibrary.funciones;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.songlibrary.modelos.Podcast;
-import org.songlibrary.modelos.PodcastBD;
+import org.songlibrary.BD.PodcastBD;
 import org.songlibrary.modelos.mensaje;
 
 import static spark.Spark.*;
 
 public class FuncionesPodcast {
 
-    public static void configurarFunciones(ObjectMapper mapper) {
+    public static void FuncionesCRUD(ObjectMapper mapper) {
 
         // Crear un podcast
         post("/podcasts", (request, response) -> {
