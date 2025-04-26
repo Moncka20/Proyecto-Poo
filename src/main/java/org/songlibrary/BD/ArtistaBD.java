@@ -1,4 +1,6 @@
-package org.songlibrary.modelos;
+package org.songlibrary.BD;
+
+import org.songlibrary.modelos.Artista;
 
 import java.util.ArrayList;
 
