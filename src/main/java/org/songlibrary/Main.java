@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.songlibrary.funciones.FuncionesCancion;
 import org.songlibrary.funciones.FuncionesArtista;
 import org.songlibrary.funciones.FuncionesDisco;
+import org.songlibrary.funciones.FuncionesGenero;
 
 import static spark.Spark.*;
 
@@ -25,5 +26,6 @@ public class Main {
         FuncionesCancion.configurarFunciones(mapper);
         FuncionesArtista.configurarFunciones(mapper);
         FuncionesDisco.configurarFunciones(mapper);
+        FuncionesGenero.configurarFunciones(mapper);
     }
 }
