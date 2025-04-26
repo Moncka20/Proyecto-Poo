@@ -26,7 +26,7 @@ public class FuncionesArtista {
             return mapper.writeValueAsString(ArtistaBD.artistas);
         });
 
-        // Obtener artista por ID (sin stream)
+        // Obtener artista por ID
         get("/artistas/:id", (request, response) -> {
             response.type("application/json");
             String id = request.params(":id");

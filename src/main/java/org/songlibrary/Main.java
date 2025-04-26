@@ -17,7 +17,7 @@ public class Main {
         // Ruta de prueba
         get("/", (request, response) -> {
             response.type("application/json");
-            return "{\"mensaje\": \"API de Canciones y Artistas funcionando\"}";
+            return "{\"mensaje\": \"funcionando\"}";
         });
 
         // Cargar las funciones de cada modelo

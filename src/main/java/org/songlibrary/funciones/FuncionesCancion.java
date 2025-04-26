@@ -26,7 +26,7 @@ public class FuncionesCancion {
             return mapper.writeValueAsString(CancionBD.canciones);
         });
 
-        // Obtener canción por ID (sin stream)
+        // Obtener canción por ID
         get("/canciones/:id", (request, response) -> {
             response.type("application/json");
             String id = request.params(":id");
