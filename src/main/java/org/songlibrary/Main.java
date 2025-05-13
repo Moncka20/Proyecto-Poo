@@ -26,5 +26,6 @@ public class Main {
         FuncionesGenero.FuncionesCRUD(mapper);
         FuncionesPodcast.FuncionesCRUD(mapper);
         FuncionesProductor.FuncionesCRUD(mapper);
+        FuncionesLetraCancion.FuncionesCRUD(mapper);
     }
 }
