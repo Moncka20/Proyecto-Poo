@@ -1,16 +1,17 @@
 package org.songlibrary.modelos;
 
-public class Compositor {
+public class SelloDiscografico {
     private int id;
     private String nombre;
     private String pais;
-    private String estilo;
+    private int anioFundacion;
 
-    public Compositor() {}
-    public Compositor(String nombre, String pais, String estilo) {
+    public SelloDiscografico() {}
+
+    public SelloDiscografico(String nombre, String pais, int anioFundacion) {
         this.nombre = nombre;
         this.pais = pais;
-        this.estilo = estilo;
+        this.anioFundacion = anioFundacion;
     }
 
     public int getId() { return id; }
@@ -22,6 +23,6 @@ public class Compositor {
     public String getPais() { return pais; }
     public void setPais(String pais) { this.pais = pais; }
 
-    public String getEstilo() { return estilo; }
-    public void setEstilo(String estilo) { this.estilo = estilo; }
+    public int getAnioFundacion() { return anioFundacion; }
+    public void setAnioFundacion(int anioFundacion) { this.anioFundacion = anioFundacion; }
 }

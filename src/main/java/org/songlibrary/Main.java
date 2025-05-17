@@ -28,5 +28,7 @@ public class Main {
         FuncionesProductor.FuncionesCRUD(mapper);
         FuncionesLetraCancion.FuncionesCRUD(mapper);
         FuncionesCompositor.FuncionesCRUD(mapper);
+        FuncionesSelloDiscografico.FuncionesCRUD(mapper);
+        FuncionesListaDeReproduccion.FuncionesCRUD(mapper);
     }
 }
