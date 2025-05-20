@@ -5,35 +5,35 @@ import org.songlibrary.BD.GeneroBD;
 import org.songlibrary.modelos.Genero;
 import org.songlibrary.modelos.mensaje;
 
-import static spark.Spark.*;
+import io.javalin.Javalin;
 
 public class FuncionesGenero {
 
-    public static void FuncionesCRUD(ObjectMapper mapper) {
+    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
 
         // Crear un género
-        post("/generos", (request, response) -> {
-            response.type("application/json");
-            Genero genero = mapper.readValue(request.body(), Genero.class);
+        app.post("/generos", ctx -> {
+            ctx.contentType("application/json");
+            Genero genero = mapper.readValue(ctx.body(), Genero.class);
             genero.setId(GeneroBD.autoId++);
             GeneroBD.generos.add(genero);
-            return mapper.writeValueAsString(new mensaje("Género agregado", request.body()));
+            ctx.json(new mensaje("Género agregado", ctx.body()));
         });
 
         // Obtener todos los géneros
-        get("/generos", (request, response) -> {
-            response.type("application/json");
-            return mapper.writeValueAsString(GeneroBD.generos);
+        app.get("/generos", ctx -> {
+            ctx.contentType("application/json");
+            ctx.json(GeneroBD.generos);
         });
 
         // Obtener género por ID
-        get("/generos/:id", (request, response) -> {
-            response.type("application/json");
-            String id = request.params(":id");
-
+        app.get("/generos/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
             if (id == null) {
-                response.status(400);
-                return mapper.writeValueAsString(new mensaje("ID no proporcionado", ""));
+                ctx.status(400);
+                ctx.json(new mensaje("ID no proporcionado", ""));
+                return;
             }
 
             Genero genero = null;
@@ -45,45 +45,47 @@ public class FuncionesGenero {
             }
 
             if (genero != null) {
-                return mapper.writeValueAsString(genero);
+                ctx.json(genero);
             } else {
-                response.status(404);
-                return mapper.writeValueAsString(new mensaje("Género no encontrado", ""));
+                ctx.status(404);
+                ctx.json(new mensaje("Género no encontrado", ""));
             }
         });
 
         // Actualizar género
-        put("/generos/:id", (request, response) -> {
-            response.type("application/json");
-            String id = request.params(":id");
-            Genero actualizado = mapper.readValue(request.body(), Genero.class);
+        app.put("/generos/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
+            Genero actualizado = mapper.readValue(ctx.body(), Genero.class);
             actualizado.setId(Integer.parseInt(id));
 
             for (int i = 0; i < GeneroBD.generos.size(); i++) {
                 if (GeneroBD.generos.get(i).getId() == Integer.parseInt(id)) {
                     GeneroBD.generos.set(i, actualizado);
-                    return mapper.writeValueAsString(new mensaje("Género actualizado", ""));
+                    ctx.json(new mensaje("Género actualizado", ""));
+                    return;
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Género no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Género no encontrado", ""));
         });
 
         // Eliminar género
-        delete("/generos/:id", (request, response) -> {
-            response.type("application/json");
-            String id = request.params(":id");
+        app.delete("/generos/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
 
             for (int i = 0; i < GeneroBD.generos.size(); i++) {
                 if (GeneroBD.generos.get(i).getId() == Integer.parseInt(id)) {
                     GeneroBD.generos.remove(i);
-                    return mapper.writeValueAsString(new mensaje("Género eliminado", ""));
+                    ctx.json(new mensaje("Género eliminado", ""));
+                    return;
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Género no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Género no encontrado", ""));
         });
     }
 }

@@ -4,31 +4,30 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.songlibrary.funciones.*;
 
-import static spark.Spark.*;
+import io.javalin.Javalin;
+
+import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-        port(4567);
-
+        Javalin app = Javalin.create().start(4567);
         // Ruta de prueba
-        get("/", (request, response) -> {
-            response.type("application/json");
-            return "{\"mensaje\": \"funcionando\"}";
+        app.get("/", ctx -> {
+            ctx.json(Map.of("mensaje", "funcionando"));
         });
 
         // Cargar las funciones de cada modelo
-        FuncionesCancion.FuncionesCRUD(mapper);
-        FuncionesArtista.FuncionesCRUD(mapper);
-        FuncionesDisco.FuncionesCRUD(mapper);
-        FuncionesGenero.FuncionesCRUD(mapper);
-        FuncionesPodcast.FuncionesCRUD(mapper);
-        FuncionesProductor.FuncionesCRUD(mapper);
-        FuncionesLetraCancion.FuncionesCRUD(mapper);
-        FuncionesCompositor.FuncionesCRUD(mapper);
-        FuncionesSelloDiscografico.FuncionesCRUD(mapper);
-        FuncionesListaDeReproduccion.FuncionesCRUD(mapper);
+        FuncionesCancion.FuncionesCRUD(app,mapper);
+        FuncionesArtista.FuncionesCRUD(app,mapper);
+        FuncionesDisco.FuncionesCRUD(app,mapper);
+        FuncionesGenero.FuncionesCRUD(app,mapper);
+        FuncionesPodcast.FuncionesCRUD(app,mapper);
+        FuncionesProductor.FuncionesCRUD(app,mapper);
+        FuncionesLetraCancion.FuncionesCRUD(app,mapper);
+        FuncionesCompositor.FuncionesCRUD(app,mapper);
+        FuncionesSelloDiscografico.FuncionesCRUD(app,mapper);
+        FuncionesListaDeReproduccion.FuncionesCRUD(app,mapper);
     }
 }

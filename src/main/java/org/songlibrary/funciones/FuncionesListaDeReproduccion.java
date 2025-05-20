@@ -5,86 +5,81 @@ import org.songlibrary.BD.ListaDeReproduccionBD;
 import org.songlibrary.modelos.ListaDeReproduccion;
 import org.songlibrary.modelos.mensaje;
 
-import static spark.Spark.*;
+import io.javalin.Javalin;
 
 public class FuncionesListaDeReproduccion {
 
-    public static void FuncionesCRUD(ObjectMapper mapper) {
+    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
 
-        // Crear lista
-        post("/listas", (request, response) -> {
-            response.type("application/json");
-            ListaDeReproduccion lista = mapper.readValue(request.body(), ListaDeReproduccion.class);
+        // Crear una lista de reproducción
+        app.post("/listas", ctx -> {
+            ctx.contentType("application/json");
+            ListaDeReproduccion lista = mapper.readValue(ctx.body(), ListaDeReproduccion.class);
             lista.setId(ListaDeReproduccionBD.autoId++);
             ListaDeReproduccionBD.listas.add(lista);
-            return mapper.writeValueAsString(new mensaje("Lista de reproducción agregada", request.body()));
+            ctx.json(new mensaje("Lista de reproducción agregada", ctx.body()));
         });
 
-        // Obtener todas las listas
-        get("/listas", (request, response) -> {
-            response.type("application/json");
-            return mapper.writeValueAsString(ListaDeReproduccionBD.listas);
+        // Obtener todas las listas de reproducción
+        app.get("/listas", ctx -> {
+            ctx.contentType("application/json");
+            ctx.json(ListaDeReproduccionBD.listas);
         });
 
-        // Obtener lista por ID
-        get("/listas/:id", (request, response) -> {
-            response.type("application/json");
-            try {
-                int idInt = Integer.parseInt(request.params(":id"));
-                for (ListaDeReproduccion l : ListaDeReproduccionBD.listas) {
-                    if (l.getId() == idInt) {
-                        return mapper.writeValueAsString(l);
-                    }
+        // Obtener lista de reproducción por ID
+        app.get("/listas/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
+            if (id == null) {
+                ctx.status(400);
+                ctx.json(new mensaje("ID no proporcionado", ""));
+                return;
+            }
+            ListaDeReproduccion encontrada = null;
+            for (ListaDeReproduccion l : ListaDeReproduccionBD.listas) {
+                if (l.getId() == Integer.parseInt(id)) {
+                    encontrada = l;
+                    break;
                 }
-                response.status(404);
-                return mapper.writeValueAsString(new mensaje("Lista no encontrada", ""));
-            } catch (NumberFormatException e) {
-                response.status(400);
-                return mapper.writeValueAsString(new mensaje("ID inválido", ""));
+            }
+            if (encontrada != null) {
+                ctx.json(encontrada);
+            } else {
+                ctx.status(404);
+                ctx.json(new mensaje("Lista de reproducción no encontrada", ""));
             }
         });
 
-        // Actualizar lista
-        put("/listas/:id", (request, response) -> {
-            response.type("application/json");
-            try {
-                int idInt = Integer.parseInt(request.params(":id"));
-                ListaDeReproduccion actualizada = mapper.readValue(request.body(), ListaDeReproduccion.class);
-                actualizada.setId(idInt);
-
-                for (int i = 0; i < ListaDeReproduccionBD.listas.size(); i++) {
-                    if (ListaDeReproduccionBD.listas.get(i).getId() == idInt) {
-                        ListaDeReproduccionBD.listas.set(i, actualizada);
-                        return mapper.writeValueAsString(new mensaje("Lista actualizada", ""));
-                    }
+        // Actualizar lista de reproducción
+        app.put("/listas/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
+            ListaDeReproduccion actualizada = mapper.readValue(ctx.body(), ListaDeReproduccion.class);
+            actualizada.setId(Integer.parseInt(id));
+            for (int i = 0; i < ListaDeReproduccionBD.listas.size(); i++) {
+                if (ListaDeReproduccionBD.listas.get(i).getId() == Integer.parseInt(id)) {
+                    ListaDeReproduccionBD.listas.set(i, actualizada);
+                    ctx.json(new mensaje("Lista de reproducción actualizada", ""));
+                    return;
                 }
-
-                response.status(404);
-                return mapper.writeValueAsString(new mensaje("Lista no encontrada", ""));
-            } catch (NumberFormatException e) {
-                response.status(400);
-                return mapper.writeValueAsString(new mensaje("ID inválido", ""));
             }
+            ctx.status(404);
+            ctx.json(new mensaje("Lista de reproducción no encontrada", ""));
         });
 
-        // Eliminar lista
-        delete("/listas/:id", (request, response) -> {
-            response.type("application/json");
-            try {
-                int idInt = Integer.parseInt(request.params(":id"));
-                for (int i = 0; i < ListaDeReproduccionBD.listas.size(); i++) {
-                    if (ListaDeReproduccionBD.listas.get(i).getId() == idInt) {
-                        ListaDeReproduccionBD.listas.remove(i);
-                        return mapper.writeValueAsString(new mensaje("Lista eliminada", ""));
-                    }
+        // Eliminar lista de reproducción
+        app.delete("/listas/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
+            for (int i = 0; i < ListaDeReproduccionBD.listas.size(); i++) {
+                if (ListaDeReproduccionBD.listas.get(i).getId() == Integer.parseInt(id)) {
+                    ListaDeReproduccionBD.listas.remove(i);
+                    ctx.json(new mensaje("Lista de reproducción eliminada", ""));
+                    return;
                 }
-
-                response.status(404);
-                return mapper.writeValueAsString(new mensaje("Lista no encontrada", ""));
-            } catch (NumberFormatException e) {
-                response.status(400);
-                return mapper.writeValueAsString(new mensaje("ID inválido", ""));
             }
+            ctx.status(404);
+            ctx.json(new mensaje("Lista de reproducción no encontrada", ""));
         });
     }
 }

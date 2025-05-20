@@ -5,69 +5,69 @@ import org.songlibrary.BD.LetraCancionBD;
 import org.songlibrary.modelos.LetraCancion;
 import org.songlibrary.modelos.mensaje;
 
-import static spark.Spark.*;
+import io.javalin.Javalin;
 
 public class FuncionesLetraCancion {
 
-    public static void FuncionesCRUD(ObjectMapper mapper) {
+    public static void FuncionesCRUD(Javalin app,ObjectMapper mapper) {
 
-        post("/letras", (request, response) -> {
-            response.type("application/json");
-            LetraCancion letra = mapper.readValue(request.body(), LetraCancion.class);
+        app.post("/letras", ctx -> {
+            ctx.contentType("application/json");
+            LetraCancion letra = mapper.readValue(ctx.body(), LetraCancion.class);
             letra.setId(LetraCancionBD.autoId++);
             LetraCancionBD.letras.add(letra);
-            return mapper.writeValueAsString(new mensaje("Letra agregada", request.body()));
+            ctx.json(new mensaje("Letra agregada", ctx.body()));
         });
 
-        get("/letras", (request, response) -> {
-            response.type("application/json");
-            return mapper.writeValueAsString(LetraCancionBD.letras);
+        app.get("/letras", ctx -> {
+            ctx.contentType("application/json");
+            ctx.json(LetraCancionBD.letras);
         });
 
-        get("/letras/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
+        app.get("/letras/{id}", ctx -> {
+            ctx.contentType("application/json");
+            int id = Integer.parseInt(ctx.pathParam("id"));
 
             for (LetraCancion l : LetraCancionBD.letras) {
                 if (l.getId() == id) {
-                    return mapper.writeValueAsString(l);
+                    ctx.json(l);
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Letra no encontrada", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Letra no encontrada", ""));
         });
 
-        put("/letras/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
-            LetraCancion actualizada = mapper.readValue(request.body(), LetraCancion.class);
+        app.put("/letras/{id}", ctx -> {
+            ctx.contentType("application/json");
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            LetraCancion actualizada = mapper.readValue(ctx.body(), LetraCancion.class);
             actualizada.setId(id);
 
             for (int i = 0; i < LetraCancionBD.letras.size(); i++) {
                 if (LetraCancionBD.letras.get(i).getId() == id) {
                     LetraCancionBD.letras.set(i, actualizada);
-                    return mapper.writeValueAsString(new mensaje("Letra actualizada", ""));
+                    ctx.json(new mensaje("Letra actualizada", ""));
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Letra no encontrada", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Letra no encontrada", ""));
         });
 
-        delete("/letras/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
+        app.delete("/letras/{id}", ctx -> {
+            ctx.contentType("application/json");
+            int id = Integer.parseInt(ctx.pathParam("id"));
 
             for (int i = 0; i < LetraCancionBD.letras.size(); i++) {
                 if (LetraCancionBD.letras.get(i).getId() == id) {
                     LetraCancionBD.letras.remove(i);
-                    return mapper.writeValueAsString(new mensaje("Letra eliminada", ""));
+                    ctx.json(new mensaje("Letra eliminada", ""));
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Letra no encontrada", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Letra no encontrada", ""));
         });
     }
 }

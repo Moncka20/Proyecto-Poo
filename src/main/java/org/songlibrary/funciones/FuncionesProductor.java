@@ -5,35 +5,36 @@ import org.songlibrary.modelos.ProductorMusical;
 import org.songlibrary.BD.ProductorMusicalBD;
 import org.songlibrary.modelos.mensaje;
 
-import static spark.Spark.*;
+import io.javalin.Javalin;
 
 public class FuncionesProductor {
 
-    public static void FuncionesCRUD(ObjectMapper mapper) {
+    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
 
         // Crear un productor musical
-        post("/productores", (request, response) -> {
-            response.type("application/json");
-            ProductorMusical productor = mapper.readValue(request.body(), ProductorMusical.class);
+        app.post("/productores", ctx -> {
+            ctx.contentType("application/json");
+            ProductorMusical productor = mapper.readValue(ctx.body(), ProductorMusical.class);
             productor.setId(ProductorMusicalBD.autoId++);
             ProductorMusicalBD.productores.add(productor);
-            return mapper.writeValueAsString(new mensaje("Productor agregado", request.body()));
+            ctx.json(new mensaje("Productor agregado", ctx.body()));
         });
 
         // Obtener todos los productores
-        get("/productores", (request, response) -> {
-            response.type("application/json");
-            return mapper.writeValueAsString(ProductorMusicalBD.productores);
+        app.get("/productores", ctx -> {
+            ctx.contentType("application/json");
+            ctx.json(ProductorMusicalBD.productores);
         });
 
         // Obtener productor por ID
-        get("/productores/:id", (request, response) -> {
-            response.type("application/json");
-            String id = request.params(":id");
+        app.get("/productores/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
 
             if (id == null) {
-                response.status(400);
-                return mapper.writeValueAsString(new mensaje("ID no proporcionado", ""));
+                ctx.status(400);
+                ctx.json(new mensaje("ID no proporcionado", ""));
+                return;
             }
 
             ProductorMusical encontrado = null;
@@ -45,45 +46,47 @@ public class FuncionesProductor {
             }
 
             if (encontrado != null) {
-                return mapper.writeValueAsString(encontrado);
+                ctx.json(encontrado);
             } else {
-                response.status(404);
-                return mapper.writeValueAsString(new mensaje("Productor no encontrado", ""));
+                ctx.status(404);
+                ctx.json(new mensaje("Productor no encontrado", ""));
             }
         });
 
         // Actualizar productor
-        put("/productores/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
-            ProductorMusical actualizado = mapper.readValue(request.body(), ProductorMusical.class);
-            actualizado.setId(id);
+        app.put("/productores/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
+            ProductorMusical actualizado = mapper.readValue(ctx.body(), ProductorMusical.class);
+            actualizado.setId(Integer.parseInt(id));
 
             for (int i = 0; i < ProductorMusicalBD.productores.size(); i++) {
-                if (ProductorMusicalBD.productores.get(i).getId() == id) {
+                if (ProductorMusicalBD.productores.get(i).getId() == Integer.parseInt(id)) {
                     ProductorMusicalBD.productores.set(i, actualizado);
-                    return mapper.writeValueAsString(new mensaje("Productor actualizado", ""));
+                    ctx.json(new mensaje("Productor actualizado", ""));
+                    return;
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Productor no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Productor no encontrado", ""));
         });
 
         // Eliminar productor
-        delete("/productores/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
+        app.delete("/productores/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
 
             for (int i = 0; i < ProductorMusicalBD.productores.size(); i++) {
-                if (ProductorMusicalBD.productores.get(i).getId() == id) {
+                if (ProductorMusicalBD.productores.get(i).getId() == Integer.parseInt(id)) {
                     ProductorMusicalBD.productores.remove(i);
-                    return mapper.writeValueAsString(new mensaje("Productor eliminado", ""));
+                    ctx.json(new mensaje("Productor eliminado", ""));
+                    return;
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Productor no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Productor no encontrado", ""));
         });
     }
 }

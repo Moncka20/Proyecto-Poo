@@ -5,35 +5,36 @@ import org.songlibrary.modelos.Podcast;
 import org.songlibrary.BD.PodcastBD;
 import org.songlibrary.modelos.mensaje;
 
-import static spark.Spark.*;
+import io.javalin.Javalin;
 
 public class FuncionesPodcast {
 
-    public static void FuncionesCRUD(ObjectMapper mapper) {
+    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
 
         // Crear un podcast
-        post("/podcasts", (request, response) -> {
-            response.type("application/json");
-            Podcast podcast = mapper.readValue(request.body(), Podcast.class);
+        app.post("/podcasts", ctx -> {
+            ctx.contentType("application/json");
+            Podcast podcast = mapper.readValue(ctx.body(), Podcast.class);
             podcast.setId(PodcastBD.autoId++);
             PodcastBD.podcasts.add(podcast);
-            return mapper.writeValueAsString(new mensaje("Podcast agregado", request.body()));
+            ctx.json(new mensaje("Podcast agregado", ctx.body()));
         });
 
         // Obtener todos los podcasts
-        get("/podcasts", (request, response) -> {
-            response.type("application/json");
-            return mapper.writeValueAsString(PodcastBD.podcasts);
+        app.get("/podcasts", ctx -> {
+            ctx.contentType("application/json");
+            ctx.json(PodcastBD.podcasts);
         });
 
         // Obtener podcast por ID
-        get("/podcasts/:id", (request, response) -> {
-            response.type("application/json");
-            String id = request.params(":id");
+        app.get("/podcasts/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
 
             if (id == null) {
-                response.status(400);
-                return mapper.writeValueAsString(new mensaje("ID no proporcionado", ""));
+                ctx.status(400);
+                ctx.json(new mensaje("ID no proporcionado", ""));
+                return;
             }
 
             Podcast encontrado = null;
@@ -45,45 +46,47 @@ public class FuncionesPodcast {
             }
 
             if (encontrado != null) {
-                return mapper.writeValueAsString(encontrado);
+                ctx.json(encontrado);
             } else {
-                response.status(404);
-                return mapper.writeValueAsString(new mensaje("Podcast no encontrado", ""));
+                ctx.status(404);
+                ctx.json(new mensaje("Podcast no encontrado", ""));
             }
         });
 
         // Actualizar podcast
-        put("/podcasts/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
-            Podcast actualizado = mapper.readValue(request.body(), Podcast.class);
-            actualizado.setId(id);
+        app.put("/podcasts/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
+            Podcast actualizado = mapper.readValue(ctx.body(), Podcast.class);
+            actualizado.setId(Integer.parseInt(id));
 
             for (int i = 0; i < PodcastBD.podcasts.size(); i++) {
-                if (PodcastBD.podcasts.get(i).getId() == id) {
+                if (PodcastBD.podcasts.get(i).getId() == Integer.parseInt(id)) {
                     PodcastBD.podcasts.set(i, actualizado);
-                    return mapper.writeValueAsString(new mensaje("Podcast actualizado", ""));
+                    ctx.json(new mensaje("Podcast actualizado", ""));
+                    return;
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Podcast no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Podcast no encontrado", ""));
         });
 
         // Eliminar podcast
-        delete("/podcasts/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
+        app.delete("/podcasts/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
 
             for (int i = 0; i < PodcastBD.podcasts.size(); i++) {
-                if (PodcastBD.podcasts.get(i).getId() == id) {
+                if (PodcastBD.podcasts.get(i).getId() == Integer.parseInt(id)) {
                     PodcastBD.podcasts.remove(i);
-                    return mapper.writeValueAsString(new mensaje("Podcast eliminado", ""));
+                    ctx.json(new mensaje("Podcast eliminado", ""));
+                    return;
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Podcast no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Podcast no encontrado", ""));
         });
     }
 }

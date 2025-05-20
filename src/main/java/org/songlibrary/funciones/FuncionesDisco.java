@@ -5,35 +5,36 @@ import org.songlibrary.BD.DiscoBD;
 import org.songlibrary.modelos.Disco;
 import org.songlibrary.modelos.mensaje;
 
-import static spark.Spark.*;
+import io.javalin.Javalin;
 
 public class FuncionesDisco {
 
-    public static void FuncionesCRUD(ObjectMapper mapper) {
+    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
 
         // Crear un disco
-        post("/discos", (request, response) -> {
-            response.type("application/json");
-            Disco disco = mapper.readValue(request.body(), Disco.class);
+        app.post("/discos", ctx -> {
+            ctx.contentType("application/json");
+            Disco disco = mapper.readValue(ctx.body(), Disco.class);
             disco.setId(DiscoBD.autoId++);
             DiscoBD.discos.add(disco);
-            return mapper.writeValueAsString(new mensaje("Disco agregado", request.body()));
+            ctx.json(new mensaje("Disco agregado", ctx.body()));
         });
 
         // Obtener todos los discos
-        get("/discos", (request, response) -> {
-            response.type("application/json");
-            return mapper.writeValueAsString(DiscoBD.discos);
+        app.get("/discos", ctx -> {
+            ctx.contentType("application/json");
+            ctx.json(DiscoBD.discos);
         });
 
         // Obtener disco por ID
-        get("/discos/:id", (request, response) -> {
-            response.type("application/json");
-            String id = request.params(":id");
+        app.get("/discos/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
 
             if (id == null) {
-                response.status(400);
-                return mapper.writeValueAsString(new mensaje("ID no proporcionado", ""));
+                ctx.status(400);
+                ctx.json(new mensaje("ID no proporcionado", ""));
+                return;
             }
 
             Disco disco = null;
@@ -45,45 +46,47 @@ public class FuncionesDisco {
             }
 
             if (disco != null) {
-                return mapper.writeValueAsString(disco);
+                ctx.json(disco);
             } else {
-                response.status(404);
-                return mapper.writeValueAsString(new mensaje("Disco no encontrado", ""));
+                ctx.status(404);
+                ctx.json(new mensaje("Disco no encontrado", ""));
             }
         });
 
         // Actualizar disco
-        put("/discos/:id", (request, response) -> {
-            response.type("application/json");
-            String id = request.params(":id");
-            Disco actualizado = mapper.readValue(request.body(), Disco.class);
+        app.put("/discos/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
+            Disco actualizado = mapper.readValue(ctx.body(), Disco.class);
             actualizado.setId(Integer.parseInt(id));
 
             for (int i = 0; i < DiscoBD.discos.size(); i++) {
                 if (DiscoBD.discos.get(i).getId() == Integer.parseInt(id)) {
                     DiscoBD.discos.set(i, actualizado);
-                    return mapper.writeValueAsString(new mensaje("Disco actualizado", ""));
+                    ctx.json(new mensaje("Disco actualizado", ""));
+                    return;
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Disco no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Disco no encontrado", ""));
         });
 
         // Eliminar disco
-        delete("/discos/:id", (request, response) -> {
-            response.type("application/json");
-            String id = request.params(":id");
+        app.delete("/discos/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
 
             for (int i = 0; i < DiscoBD.discos.size(); i++) {
                 if (DiscoBD.discos.get(i).getId() == Integer.parseInt(id)) {
                     DiscoBD.discos.remove(i);
-                    return mapper.writeValueAsString(new mensaje("Disco eliminado", ""));
+                    ctx.json(new mensaje("Disco eliminado", ""));
+                    return;
                 }
             }
 
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Disco no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Disco no encontrado", ""));
         });
     }
 }

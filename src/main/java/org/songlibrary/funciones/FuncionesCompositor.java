@@ -5,69 +5,81 @@ import org.songlibrary.BD.CompositorBD;
 import org.songlibrary.modelos.Compositor;
 import org.songlibrary.modelos.mensaje;
 
-import static spark.Spark.*;
+import io.javalin.Javalin;
 
 public class FuncionesCompositor {
 
-    public static void FuncionesCRUD(ObjectMapper mapper) {
+    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
 
-        post("/compositores", (request, response) -> {
-            response.type("application/json");
-            Compositor compositor = mapper.readValue(request.body(), Compositor.class);
+        // Crear compositor
+        app.post("/compositores", ctx -> {
+            ctx.contentType("application/json");
+            Compositor compositor = mapper.readValue(ctx.body(), Compositor.class);
             compositor.setId(CompositorBD.autoId++);
             CompositorBD.compositores.add(compositor);
-            return mapper.writeValueAsString(new mensaje("Compositor agregado", request.body()));
+            ctx.json(new mensaje("Compositor agregado", ctx.body()));
         });
 
-        get("/compositores", (request, response) -> {
-            response.type("application/json");
-            return mapper.writeValueAsString(CompositorBD.compositores);
+        // Obtener todos los compositores
+        app.get("/compositores", ctx -> {
+            ctx.contentType("application/json");
+            ctx.json(CompositorBD.compositores);
         });
 
-        get("/compositores/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
-
+        // Obtener compositor por ID
+        app.get("/compositores/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
+            if (id == null) {
+                ctx.status(400);
+                ctx.json(new mensaje("ID no proporcionado", ""));
+                return;
+            }
+            Compositor compositor = null;
             for (Compositor c : CompositorBD.compositores) {
-                if (c.getId() == id) {
-                    return mapper.writeValueAsString(c);
+                if (c.getId() == Integer.parseInt(id)) {
+                    compositor = c;
+                    break;
                 }
             }
-
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Compositor no encontrado", ""));
+            if (compositor != null) {
+                ctx.json(compositor);
+            } else {
+                ctx.status(404);
+                ctx.json(new mensaje("Compositor no encontrado", ""));
+            }
         });
 
-        put("/compositores/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
-            Compositor actualizado = mapper.readValue(request.body(), Compositor.class);
-            actualizado.setId(id);
-
+        // Actualizar compositor
+        app.put("/compositores/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
+            Compositor actualizado = mapper.readValue(ctx.body(), Compositor.class);
+            actualizado.setId(Integer.parseInt(id));
             for (int i = 0; i < CompositorBD.compositores.size(); i++) {
-                if (CompositorBD.compositores.get(i).getId() == id) {
+                if (CompositorBD.compositores.get(i).getId() == Integer.parseInt(id)) {
                     CompositorBD.compositores.set(i, actualizado);
-                    return mapper.writeValueAsString(new mensaje("Compositor actualizado", ""));
+                    ctx.json(new mensaje("Compositor actualizado", ""));
+                    return;
                 }
             }
-
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Compositor no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Compositor no encontrado", ""));
         });
 
-        delete("/compositores/:id", (request, response) -> {
-            response.type("application/json");
-            int id = Integer.parseInt(request.params(":id"));
-
+        // Eliminar compositor
+        app.delete("/compositores/{id}", ctx -> {
+            ctx.contentType("application/json");
+            String id = ctx.pathParam("id");
             for (int i = 0; i < CompositorBD.compositores.size(); i++) {
-                if (CompositorBD.compositores.get(i).getId() == id) {
+                if (CompositorBD.compositores.get(i).getId() == Integer.parseInt(id)) {
                     CompositorBD.compositores.remove(i);
-                    return mapper.writeValueAsString(new mensaje("Compositor eliminado", ""));
+                    ctx.json(new mensaje("Compositor eliminado", ""));
+                    return;
                 }
             }
-
-            response.status(404);
-            return mapper.writeValueAsString(new mensaje("Compositor no encontrado", ""));
+            ctx.status(404);
+            ctx.json(new mensaje("Compositor no encontrado", ""));
         });
     }
 }
