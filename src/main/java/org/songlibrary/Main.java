@@ -32,5 +32,6 @@ public class Main {
         FuncionesUsuario.FuncionesCRUD(app,mapper);
         FuncionesHistorialReproduccion.FuncionesCRUD(app,mapper);
         FuncionesRankingCancion.FuncionesCRUD(app,mapper);
+        FuncionesListaDeReproduccion.FuncionesCRUD(app,mapper);
     }
 }
