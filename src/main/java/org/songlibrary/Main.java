@@ -32,10 +32,11 @@ public class Main {
         FuncionesUsuario.FuncionesCRUD(app,mapper);
         FuncionesHistorialReproduccion.FuncionesCRUD(app,mapper);
         FuncionesRankingCancion.FuncionesCRUD(app,mapper);
-        FuncionesListaDeReproduccion.FuncionesCRUD(app,mapper);
         FuncionesSuscripcion.FuncionesCRUD(app,mapper);
         FuncionesEstadisticaCancion.FuncionesCRUD(app,mapper);
         FuncionesRecomendacion.FuncionesCRUD(app,mapper);
         FuncionesBusqueda.FuncionesCRUD(app,mapper);
+        FuncionesListaBloqueo.FuncionesCRUD(app,mapper);
+        FuncionesClasificacion.FuncionesCRUD(app,mapper);
     }
 }

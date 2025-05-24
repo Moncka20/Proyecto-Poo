@@ -3,9 +3,9 @@ package org.songlibrary.modelos;
 public class Clasificacion {
     private int id;
     private int usuarioId;
-    private int elementoId; // Puede ser ID de canción, artista o playlist
-    private String tipoElemento; // Ejemplo: "cancion", "artista", "playlist"
-    private String etiqueta; // Ejemplo: "Feliz", "Rock", "Workout", etc.
+    private int elementoId; //
+    private String tipoElemento; //
+    private String etiqueta; //
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }

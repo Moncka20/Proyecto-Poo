@@ -4,7 +4,7 @@ public class Disco {
     private int id;
     private String titulo;
     private int anio;
-    private int idArtista; // El ID del artista que creó el disco
+    private int idArtista;
 
     // Constructor vacío
     public Disco() {

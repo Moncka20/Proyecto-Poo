@@ -3,9 +3,9 @@ package org.songlibrary.modelos;
 public class ListaBloqueo {
     private int id;
     private int usuarioId;
-    private int bloqueadoId; // Puede ser usuario, artista o canción
-    private String tipo; // Ejemplo: "usuario", "artista", "cancion"
-    private String motivo; // Opcional, motivo del bloqueo
+    private int bloqueadoId;
+    private String tipo;
+    private String motivo;
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
