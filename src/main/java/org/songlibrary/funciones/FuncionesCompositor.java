@@ -1,85 +1,57 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.CompositorBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.Compositor;
 import org.songlibrary.modelos.mensaje;
+import org.songlibrary.servicio.CompositorServicio;
 
-import io.javalin.Javalin;
+import java.util.List;
 
 public class FuncionesCompositor {
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    private static final CompositorServicio servicio = new CompositorServicio();
 
-        // Crear compositor
-        app.post("/compositores", ctx -> {
-            ctx.contentType("application/json");
-            Compositor compositor = mapper.readValue(ctx.body(), Compositor.class);
-            compositor.setId(CompositorBD.autoId++);
-            CompositorBD.compositores.add(compositor);
-            ctx.json(new mensaje("Compositor agregado", ctx.body()));
-        });
+    public static void configurar(Javalin app) {
+        app.post("/compositores", FuncionesCompositor::agregar);
+        app.get("/compositores/{id}", FuncionesCompositor::obtener);
+        app.put("/compositores/{id}", FuncionesCompositor::actualizar);
+        app.delete("/compositores/{id}", FuncionesCompositor::eliminar);
+        app.get("/compositores", FuncionesCompositor::listar);
+    }
 
-        // Obtener todos los compositores
-        app.get("/compositores", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(CompositorBD.compositores);
-        });
+    private static void agregar(Context ctx) {
+        Compositor obj = ctx.bodyAsClass(Compositor.class);
+        servicio.guardarCompositor(obj);
+        mensaje<Compositor> respuesta = new mensaje<>("Compositor agregado correctamente", obj);
+        ctx.status(201).json(respuesta);
+    }
 
-        // Obtener compositor por ID
-        app.get("/compositores/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            Compositor compositor = null;
-            for (Compositor c : CompositorBD.compositores) {
-                if (c.getId() == Integer.parseInt(id)) {
-                    compositor = c;
-                    break;
-                }
-            }
-            if (compositor != null) {
-                ctx.json(compositor);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Compositor no encontrado", ""));
-            }
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Compositor obj = servicio.obtenerCompositor(id);
+        if (obj != null) {
+            ctx.json(obj);
+        } else {
+            ctx.status(404).json(new mensaje<>("Compositor no encontrado", null));
+        }
+    }
 
-        // Actualizar compositor
-        app.put("/compositores/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            Compositor actualizado = mapper.readValue(ctx.body(), Compositor.class);
-            actualizado.setId(Integer.parseInt(id));
-            for (int i = 0; i < CompositorBD.compositores.size(); i++) {
-                if (CompositorBD.compositores.get(i).getId() == Integer.parseInt(id)) {
-                    CompositorBD.compositores.set(i, actualizado);
-                    ctx.json(new mensaje("Compositor actualizado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Compositor no encontrado", ""));
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Compositor objActualizado = ctx.bodyAsClass(Compositor.class);
+        servicio.actualizarCompositor(id, objActualizado);
+        ctx.json(new mensaje<>("Compositor actualizado correctamente", objActualizado));
+    }
 
-        // Eliminar compositor
-        app.delete("/compositores/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < CompositorBD.compositores.size(); i++) {
-                if (CompositorBD.compositores.get(i).getId() == Integer.parseInt(id)) {
-                    CompositorBD.compositores.remove(i);
-                    ctx.json(new mensaje("Compositor eliminado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Compositor no encontrado", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarCompositor(id);
+        ctx.json(new mensaje<>("Compositor eliminado correctamente", null));
+    }
+
+    private static void listar(Context ctx) {
+        List<Compositor> lista = servicio.obtenerCompositores();
+        ctx.json(lista);
     }
 }

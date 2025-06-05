@@ -1,92 +1,57 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.DiscoBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.Disco;
 import org.songlibrary.modelos.mensaje;
+import org.songlibrary.servicio.DiscoServicio;
 
-import io.javalin.Javalin;
+import java.util.List;
 
 public class FuncionesDisco {
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    private static final DiscoServicio servicio = new DiscoServicio();
 
-        // Crear un disco
-        app.post("/discos", ctx -> {
-            ctx.contentType("application/json");
-            Disco disco = mapper.readValue(ctx.body(), Disco.class);
-            disco.setId(DiscoBD.autoId++);
-            DiscoBD.discos.add(disco);
-            ctx.json(new mensaje("Disco agregado", ctx.body()));
-        });
+    public static void configurar(Javalin app) {
+        app.post("/discos", FuncionesDisco::agregar);
+        app.get("/discos/{id}", FuncionesDisco::obtener);
+        app.put("/discos/{id}", FuncionesDisco::actualizar);
+        app.delete("/discos/{id}", FuncionesDisco::eliminar);
+        app.get("/discos", FuncionesDisco::listar);
+    }
 
-        // Obtener todos los discos
-        app.get("/discos", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(DiscoBD.discos);
-        });
+    private static void agregar(Context ctx) {
+        Disco obj = ctx.bodyAsClass(Disco.class);
+        servicio.guardarDisco(obj);
+        mensaje<Disco> respuesta = new mensaje<>("Disco agregado correctamente", obj);
+        ctx.status(201).json(respuesta);
+    }
 
-        // Obtener disco por ID
-        app.get("/discos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Disco obj = servicio.obtenerDisco(id);
+        if (obj != null) {
+            ctx.json(obj);
+        } else {
+            ctx.status(404).json(new mensaje<>("Disco no encontrado", null));
+        }
+    }
 
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Disco objActualizado = ctx.bodyAsClass(Disco.class);
+        servicio.actualizarDisco(id, objActualizado);
+        ctx.json(new mensaje<>("Disco actualizado correctamente", objActualizado));
+    }
 
-            Disco disco = null;
-            for (Disco d : DiscoBD.discos) {
-                if (d.getId() == Integer.parseInt(id)) {
-                    disco = d;
-                    break;
-                }
-            }
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarDisco(id);
+        ctx.json(new mensaje<>("Disco eliminado correctamente", null));
+    }
 
-            if (disco != null) {
-                ctx.json(disco);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Disco no encontrado", ""));
-            }
-        });
-
-        // Actualizar disco
-        app.put("/discos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            Disco actualizado = mapper.readValue(ctx.body(), Disco.class);
-            actualizado.setId(Integer.parseInt(id));
-
-            for (int i = 0; i < DiscoBD.discos.size(); i++) {
-                if (DiscoBD.discos.get(i).getId() == Integer.parseInt(id)) {
-                    DiscoBD.discos.set(i, actualizado);
-                    ctx.json(new mensaje("Disco actualizado", ""));
-                    return;
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Disco no encontrado", ""));
-        });
-
-        // Eliminar disco
-        app.delete("/discos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-
-            for (int i = 0; i < DiscoBD.discos.size(); i++) {
-                if (DiscoBD.discos.get(i).getId() == Integer.parseInt(id)) {
-                    DiscoBD.discos.remove(i);
-                    ctx.json(new mensaje("Disco eliminado", ""));
-                    return;
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Disco no encontrado", ""));
-        });
+    private static void listar(Context ctx) {
+        List<Disco> lista = servicio.obtenerDiscos();
+        ctx.json(lista);
     }
 }

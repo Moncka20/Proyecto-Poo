@@ -1,81 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.ListaFavoritosBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.ListaFavoritos;
 import org.songlibrary.modelos.mensaje;
-
-
-import io.javalin.Javalin;
+import org.songlibrary.servicio.ListaFavoritosServicio;
+import java.util.List;
 
 public class FuncionesListaFavoritos {
+    private static final ListaFavoritosServicio servicio = new ListaFavoritosServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/favoritos", FuncionesListaFavoritos::agregar);
+        app.get("/favoritos/{id}", FuncionesListaFavoritos::obtener);
+        app.put("/favoritos/{id}", FuncionesListaFavoritos::actualizar);
+        app.delete("/favoritos/{id}", FuncionesListaFavoritos::eliminar);
+        app.get("/favoritos", FuncionesListaFavoritos::listar);
+    }
 
-        app.post("/favoritos", ctx -> {
-            ctx.contentType("application/json");
-            ListaFavoritos lista = mapper.readValue(ctx.body(), ListaFavoritos.class);
-            lista.setId(ListaFavoritosBD.autoId++);
-            ListaFavoritosBD.favoritos.add(lista);
-            ctx.json(new mensaje("Lista de favoritos agregada", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        ListaFavoritos obj = ctx.bodyAsClass(ListaFavoritos.class);
+        servicio.guardarFavorito(obj);
+        ctx.status(201).json(new mensaje<>("Favorito agregado correctamente", obj));
+    }
 
-        app.get("/favoritos", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(ListaFavoritosBD.favoritos);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        ListaFavoritos obj = servicio.obtenerFavorito(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Favorito no encontrado", null));
+    }
 
-        app.get("/favoritos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            ListaFavoritos encontrada = null;
-            for (ListaFavoritos l : ListaFavoritosBD.favoritos) {
-                if (l.getId() == Integer.parseInt(id)) {
-                    encontrada = l;
-                    break;
-                }
-            }
-            if (encontrada != null) {
-                ctx.json(encontrada);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Lista de favoritos no encontrada", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        ListaFavoritos objActualizado = ctx.bodyAsClass(ListaFavoritos.class);
+        servicio.actualizarFavorito(id, objActualizado);
+        ctx.json(new mensaje<>("Favorito actualizado correctamente", objActualizado));
+    }
 
-        app.put("/favoritos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            ListaFavoritos actualizada = mapper.readValue(ctx.body(), ListaFavoritos.class);
-            actualizada.setId(Integer.parseInt(id));
-            for (int i = 0; i < ListaFavoritosBD.favoritos.size(); i++) {
-                if (ListaFavoritosBD.favoritos.get(i).getId() == Integer.parseInt(id)) {
-                    ListaFavoritosBD.favoritos.set(i, actualizada);
-                    ctx.json(new mensaje("Lista de favoritos actualizada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Lista de favoritos no encontrada", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarFavorito(id);
+        ctx.json(new mensaje<>("Favorito eliminado correctamente", null));
+    }
 
-        app.delete("/favoritos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < ListaFavoritosBD.favoritos.size(); i++) {
-                if (ListaFavoritosBD.favoritos.get(i).getId() == Integer.parseInt(id)) {
-                    ListaFavoritosBD.favoritos.remove(i);
-                    ctx.json(new mensaje("Lista de favoritos eliminada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Lista de favoritos no encontrada", ""));
-        });
+    private static void listar(Context ctx) {
+        List<ListaFavoritos> lista = servicio.obtenerFavoritos();
+        ctx.json(lista);
     }
 }

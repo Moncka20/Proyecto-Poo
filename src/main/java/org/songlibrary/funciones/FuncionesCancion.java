@@ -1,92 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.CancionBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.Cancion;
 import org.songlibrary.modelos.mensaje;
-
-import io.javalin.Javalin;
+import org.songlibrary.servicio.CancionServicio;
+import java.util.List;
 
 public class FuncionesCancion {
+    private static final CancionServicio servicio = new CancionServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/canciones", FuncionesCancion::agregar);
+        app.get("/canciones/{id}", FuncionesCancion::obtener);
+        app.put("/canciones/{id}", FuncionesCancion::actualizar);
+        app.delete("/canciones/{id}", FuncionesCancion::eliminar);
+        app.get("/canciones", FuncionesCancion::listar);
+    }
 
-        // Crear una canción
-        app.post("/canciones", ctx -> {
-            ctx.contentType("application/json");
-            Cancion cancion = mapper.readValue(ctx.body(), Cancion.class);
-            cancion.setId(CancionBD.autoId++);
-            CancionBD.canciones.add(cancion);
-            ctx.json(new mensaje("Canción agregada", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        Cancion obj = ctx.bodyAsClass(Cancion.class);
+        servicio.guardarCancion(obj);
+        ctx.status(201).json(new mensaje<>("Cancion agregada correctamente", obj));
+    }
 
-        // Obtener todas las canciones
-        app.get("/canciones", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(CancionBD.canciones);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Cancion obj = servicio.obtenerCancion(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Cancion no encontrada", null));
+    }
 
-        // Obtener canción por ID
-        app.get("/canciones/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Cancion objActualizado = ctx.bodyAsClass(Cancion.class);
+        servicio.actualizarCancion(id, objActualizado);
+        ctx.json(new mensaje<>("Cancion actualizada correctamente", objActualizado));
+    }
 
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarCancion(id);
+        ctx.json(new mensaje<>("Cancion eliminada correctamente", null));
+    }
 
-            Cancion cancion = null;
-            for (Cancion c : CancionBD.canciones) {
-                if (c.getId() == Integer.parseInt(id)) {
-                    cancion = c;
-                    break;
-                }
-            }
-
-            if (cancion != null) {
-                ctx.json(cancion);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Canción no encontrada", ""));
-            }
-        });
-
-        // Actualizar canción
-        app.put("/canciones/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            Cancion actualizada = mapper.readValue(ctx.body(), Cancion.class);
-            actualizada.setId(Integer.parseInt(id));
-
-            for (int i = 0; i < CancionBD.canciones.size(); i++) {
-                if (CancionBD.canciones.get(i).getId() == Integer.parseInt(id)) {
-                    CancionBD.canciones.set(i, actualizada);
-                    ctx.json(new mensaje("Canción actualizada", ""));
-                    return;
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Canción no encontrada", ""));
-        });
-
-        // Eliminar canción
-        app.delete("/canciones/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-
-            for (int i = 0; i < CancionBD.canciones.size(); i++) {
-                if (CancionBD.canciones.get(i).getId() == Integer.parseInt(id)) {
-                    CancionBD.canciones.remove(i);
-                    ctx.json(new mensaje("Canción eliminada", ""));
-                    return;
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Canción no encontrada", ""));
-        });
+    private static void listar(Context ctx) {
+        List<Cancion> lista = servicio.obtenerCanciones();
+        ctx.json(lista);
     }
 }

@@ -1,81 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.SuscripcionBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.Suscripcion;
 import org.songlibrary.modelos.mensaje;
-
-
-import io.javalin.Javalin;
+import org.songlibrary.servicio.SuscripcionServicio;
+import java.util.List;
 
 public class FuncionesSuscripcion {
+    private static final SuscripcionServicio servicio = new SuscripcionServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/suscripciones", FuncionesSuscripcion::agregar);
+        app.get("/suscripciones/{id}", FuncionesSuscripcion::obtener);
+        app.put("/suscripciones/{id}", FuncionesSuscripcion::actualizar);
+        app.delete("/suscripciones/{id}", FuncionesSuscripcion::eliminar);
+        app.get("/suscripciones", FuncionesSuscripcion::listar);
+    }
 
-        app.post("/suscripciones", ctx -> {
-            ctx.contentType("application/json");
-            Suscripcion suscripcion = mapper.readValue(ctx.body(), Suscripcion.class);
-            suscripcion.setId(SuscripcionBD.autoId++);
-            SuscripcionBD.suscripciones.add(suscripcion);
-            ctx.json(new mensaje("Suscripción agregada", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        Suscripcion obj = ctx.bodyAsClass(Suscripcion.class);
+        servicio.guardarSuscripcion(obj);
+        ctx.status(201).json(new mensaje<>("Suscripción agregada correctamente", obj));
+    }
 
-        app.get("/suscripciones", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(SuscripcionBD.suscripciones);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Suscripcion obj = servicio.obtenerSuscripcion(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Suscripción no encontrada", null));
+    }
 
-        app.get("/suscripciones/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            Suscripcion encontrada = null;
-            for (Suscripcion s : SuscripcionBD.suscripciones) {
-                if (s.getId() == Integer.parseInt(id)) {
-                    encontrada = s;
-                    break;
-                }
-            }
-            if (encontrada != null) {
-                ctx.json(encontrada);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Suscripción no encontrada", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Suscripcion objActualizado = ctx.bodyAsClass(Suscripcion.class);
+        servicio.actualizarSuscripcion(id, objActualizado);
+        ctx.json(new mensaje<>("Suscripción actualizada correctamente", objActualizado));
+    }
 
-        app.put("/suscripciones/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            Suscripcion actualizada = mapper.readValue(ctx.body(), Suscripcion.class);
-            actualizada.setId(Integer.parseInt(id));
-            for (int i = 0; i < SuscripcionBD.suscripciones.size(); i++) {
-                if (SuscripcionBD.suscripciones.get(i).getId() == Integer.parseInt(id)) {
-                    SuscripcionBD.suscripciones.set(i, actualizada);
-                    ctx.json(new mensaje("Suscripción actualizada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Suscripción no encontrada", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarSuscripcion(id);
+        ctx.json(new mensaje<>("Suscripción eliminada correctamente", null));
+    }
 
-        app.delete("/suscripciones/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < SuscripcionBD.suscripciones.size(); i++) {
-                if (SuscripcionBD.suscripciones.get(i).getId() == Integer.parseInt(id)) {
-                    SuscripcionBD.suscripciones.remove(i);
-                    ctx.json(new mensaje("Suscripción eliminada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Suscripción no encontrada", ""));
-        });
+    private static void listar(Context ctx) {
+        List<Suscripcion> lista = servicio.obtenerSuscripciones();
+        ctx.json(lista);
     }
 }

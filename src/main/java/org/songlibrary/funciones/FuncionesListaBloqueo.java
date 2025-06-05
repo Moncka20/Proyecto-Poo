@@ -1,79 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.ListaBloqueoBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.ListaBloqueo;
 import org.songlibrary.modelos.mensaje;
-import io.javalin.Javalin;
+import org.songlibrary.servicio.ListaBloqueoServicio;
+import java.util.List;
 
 public class FuncionesListaBloqueo {
+    private static final ListaBloqueoServicio servicio = new ListaBloqueoServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/bloqueos", FuncionesListaBloqueo::agregar);
+        app.get("/bloqueos/{id}", FuncionesListaBloqueo::obtener);
+        app.put("/bloqueos/{id}", FuncionesListaBloqueo::actualizar);
+        app.delete("/bloqueos/{id}", FuncionesListaBloqueo::eliminar);
+        app.get("/bloqueos", FuncionesListaBloqueo::listar);
+    }
 
-        app.post("/bloqueos", ctx -> {
-            ctx.contentType("application/json");
-            ListaBloqueo bloqueo = mapper.readValue(ctx.body(), ListaBloqueo.class);
-            bloqueo.setId(ListaBloqueoBD.autoId++);
-            ListaBloqueoBD.bloqueos.add(bloqueo);
-            ctx.json(new mensaje("Bloqueo agregado", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        ListaBloqueo obj = ctx.bodyAsClass(ListaBloqueo.class);
+        servicio.guardarListaBloqueo(obj);
+        ctx.status(201).json(new mensaje<>("Bloqueo agregado correctamente", obj));
+    }
 
-        app.get("/bloqueos", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(ListaBloqueoBD.bloqueos);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        ListaBloqueo obj = servicio.obtenerListaBloqueo(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Bloqueo no encontrado", null));
+    }
 
-        app.get("/bloqueos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            ListaBloqueo encontrada = null;
-            for (ListaBloqueo b : ListaBloqueoBD.bloqueos) {
-                if (b.getId() == Integer.parseInt(id)) {
-                    encontrada = b;
-                    break;
-                }
-            }
-            if (encontrada != null) {
-                ctx.json(encontrada);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Bloqueo no encontrado", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        ListaBloqueo objActualizado = ctx.bodyAsClass(ListaBloqueo.class);
+        servicio.actualizarListaBloqueo(id, objActualizado);
+        ctx.json(new mensaje<>("Bloqueo actualizado correctamente", objActualizado));
+    }
 
-        app.put("/bloqueos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            ListaBloqueo actualizada = mapper.readValue(ctx.body(), ListaBloqueo.class);
-            actualizada.setId(Integer.parseInt(id));
-            for (int i = 0; i < ListaBloqueoBD.bloqueos.size(); i++) {
-                if (ListaBloqueoBD.bloqueos.get(i).getId() == Integer.parseInt(id)) {
-                    ListaBloqueoBD.bloqueos.set(i, actualizada);
-                    ctx.json(new mensaje("Bloqueo actualizado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Bloqueo no encontrado", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarListaBloqueo(id);
+        ctx.json(new mensaje<>("Bloqueo eliminado correctamente", null));
+    }
 
-        app.delete("/bloqueos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < ListaBloqueoBD.bloqueos.size(); i++) {
-                if (ListaBloqueoBD.bloqueos.get(i).getId() == Integer.parseInt(id)) {
-                    ListaBloqueoBD.bloqueos.remove(i);
-                    ctx.json(new mensaje("Bloqueo eliminado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Bloqueo no encontrado", ""));
-        });
+    private static void listar(Context ctx) {
+        List<ListaBloqueo> lista = servicio.obtenerListasBloqueo();
+        ctx.json(lista);
     }
 }

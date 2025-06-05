@@ -1,79 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.RankingCancionBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.RankingCancion;
 import org.songlibrary.modelos.mensaje;
-import io.javalin.Javalin;
+import org.songlibrary.servicio.RankingCancionServicio;
+import java.util.List;
 
 public class FuncionesRankingCancion {
+    private static final RankingCancionServicio servicio = new RankingCancionServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/rankings", FuncionesRankingCancion::agregar);
+        app.get("/rankings/{id}", FuncionesRankingCancion::obtener);
+        app.put("/rankings/{id}", FuncionesRankingCancion::actualizar);
+        app.delete("/rankings/{id}", FuncionesRankingCancion::eliminar);
+        app.get("/rankings", FuncionesRankingCancion::listar);
+    }
 
-        app.post("/rankings", ctx -> {
-            ctx.contentType("application/json");
-            RankingCancion ranking = mapper.readValue(ctx.body(), RankingCancion.class);
-            ranking.setId(RankingCancionBD.autoId++);
-            RankingCancionBD.rankings.add(ranking);
-            ctx.json(new mensaje("Ranking agregado", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        RankingCancion obj = ctx.bodyAsClass(RankingCancion.class);
+        servicio.guardarRanking(obj);
+        ctx.status(201).json(new mensaje<>("Ranking agregado correctamente", obj));
+    }
 
-        app.get("/rankings", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(RankingCancionBD.rankings);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        RankingCancion obj = servicio.obtenerRanking(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Ranking no encontrado", null));
+    }
 
-        app.get("/rankings/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            RankingCancion encontrado = null;
-            for (RankingCancion r : RankingCancionBD.rankings) {
-                if (r.getId() == Integer.parseInt(id)) {
-                    encontrado = r;
-                    break;
-                }
-            }
-            if (encontrado != null) {
-                ctx.json(encontrado);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Ranking no encontrado", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        RankingCancion objActualizado = ctx.bodyAsClass(RankingCancion.class);
+        servicio.actualizarRanking(id, objActualizado);
+        ctx.json(new mensaje<>("Ranking actualizado correctamente", objActualizado));
+    }
 
-        app.put("/rankings/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            RankingCancion actualizado = mapper.readValue(ctx.body(), RankingCancion.class);
-            actualizado.setId(Integer.parseInt(id));
-            for (int i = 0; i < RankingCancionBD.rankings.size(); i++) {
-                if (RankingCancionBD.rankings.get(i).getId() == Integer.parseInt(id)) {
-                    RankingCancionBD.rankings.set(i, actualizado);
-                    ctx.json(new mensaje("Ranking actualizado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Ranking no encontrado", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarRanking(id);
+        ctx.json(new mensaje<>("Ranking eliminado correctamente", null));
+    }
 
-        app.delete("/rankings/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < RankingCancionBD.rankings.size(); i++) {
-                if (RankingCancionBD.rankings.get(i).getId() == Integer.parseInt(id)) {
-                    RankingCancionBD.rankings.remove(i);
-                    ctx.json(new mensaje("Ranking eliminado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Ranking no encontrado", ""));
-        });
+    private static void listar(Context ctx) {
+        List<RankingCancion> lista = servicio.obtenerRankings();
+        ctx.json(lista);
     }
 }

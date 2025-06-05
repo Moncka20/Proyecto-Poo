@@ -1,79 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.EstadisticaCancionBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.EstadisticaCancion;
 import org.songlibrary.modelos.mensaje;
-import io.javalin.Javalin;
+import org.songlibrary.servicio.EstadisticaCancionServicio;
+import java.util.List;
 
 public class FuncionesEstadisticaCancion {
+    private static final EstadisticaCancionServicio servicio = new EstadisticaCancionServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/estadisticas", FuncionesEstadisticaCancion::agregar);
+        app.get("/estadisticas/{id}", FuncionesEstadisticaCancion::obtener);
+        app.put("/estadisticas/{id}", FuncionesEstadisticaCancion::actualizar);
+        app.delete("/estadisticas/{id}", FuncionesEstadisticaCancion::eliminar);
+        app.get("/estadisticas", FuncionesEstadisticaCancion::listar);
+    }
 
-        app.post("/estadisticas", ctx -> {
-            ctx.contentType("application/json");
-            EstadisticaCancion estadistica = mapper.readValue(ctx.body(), EstadisticaCancion.class);
-            estadistica.setId(EstadisticaCancionBD.autoId++);
-            EstadisticaCancionBD.estadisticas.add(estadistica);
-            ctx.json(new mensaje("Estadística de canción agregada", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        EstadisticaCancion obj = ctx.bodyAsClass(EstadisticaCancion.class);
+        servicio.guardarEstadistica(obj);
+        ctx.status(201).json(new mensaje<>("Estadística agregada correctamente", obj));
+    }
 
-        app.get("/estadisticas", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(EstadisticaCancionBD.estadisticas);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        EstadisticaCancion obj = servicio.obtenerEstadistica(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Estadística no encontrada", null));
+    }
 
-        app.get("/estadisticas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            EstadisticaCancion encontrada = null;
-            for (EstadisticaCancion e : EstadisticaCancionBD.estadisticas) {
-                if (e.getId() == Integer.parseInt(id)) {
-                    encontrada = e;
-                    break;
-                }
-            }
-            if (encontrada != null) {
-                ctx.json(encontrada);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Estadística de canción no encontrada", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        EstadisticaCancion objActualizado = ctx.bodyAsClass(EstadisticaCancion.class);
+        servicio.actualizarEstadistica(id, objActualizado);
+        ctx.json(new mensaje<>("Estadística actualizada correctamente", objActualizado));
+    }
 
-        app.put("/estadisticas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            EstadisticaCancion actualizada = mapper.readValue(ctx.body(), EstadisticaCancion.class);
-            actualizada.setId(Integer.parseInt(id));
-            for (int i = 0; i < EstadisticaCancionBD.estadisticas.size(); i++) {
-                if (EstadisticaCancionBD.estadisticas.get(i).getId() == Integer.parseInt(id)) {
-                    EstadisticaCancionBD.estadisticas.set(i, actualizada);
-                    ctx.json(new mensaje("Estadística de canción actualizada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Estadística de canción no encontrada", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarEstadistica(id);
+        ctx.json(new mensaje<>("Estadística eliminada correctamente", null));
+    }
 
-        app.delete("/estadisticas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < EstadisticaCancionBD.estadisticas.size(); i++) {
-                if (EstadisticaCancionBD.estadisticas.get(i).getId() == Integer.parseInt(id)) {
-                    EstadisticaCancionBD.estadisticas.remove(i);
-                    ctx.json(new mensaje("Estadística de canción eliminada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Estadística de canción no encontrada", ""));
-        });
+    private static void listar(Context ctx) {
+        List<EstadisticaCancion> lista = servicio.obtenerEstadisticas();
+        ctx.json(lista);
     }
 }

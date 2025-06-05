@@ -1,81 +1,57 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.UsuarioBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.Usuario;
 import org.songlibrary.modelos.mensaje;
+import org.songlibrary.servicio.UsuarioServicio;
 
-
-import io.javalin.Javalin;
+import java.util.List;
 
 public class FuncionesUsuario {
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    private static final UsuarioServicio servicio = new UsuarioServicio();
 
-        app.post("/usuarios", ctx -> {
-            ctx.contentType("application/json");
-            Usuario usuario = mapper.readValue(ctx.body(), Usuario.class);
-            usuario.setId(UsuarioBD.autoId++);
-            UsuarioBD.usuarios.add(usuario);
-            ctx.json(new mensaje("Usuario agregado", ctx.body()));
-        });
+    public static void configurar(Javalin app) {
+        app.post("/usuarios", FuncionesUsuario::agregar);
+        app.get("/usuarios/{id}", FuncionesUsuario::obtener);
+        app.put("/usuarios/{id}", FuncionesUsuario::actualizar);
+        app.delete("/usuarios/{id}", FuncionesUsuario::eliminar);
+        app.get("/usuarios", FuncionesUsuario::listar);
+    }
 
-        app.get("/usuarios", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(UsuarioBD.usuarios);
-        });
+    private static void agregar(Context ctx) {
+        Usuario obj = ctx.bodyAsClass(Usuario.class);
+        servicio.guardarUsuario(obj);
+        mensaje<Usuario> respuesta = new mensaje<>("Usuario agregado correctamente", obj);
+        ctx.status(201).json(respuesta);
+    }
 
-        app.get("/usuarios/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            Usuario encontrado = null;
-            for (Usuario u : UsuarioBD.usuarios) {
-                if (u.getId() == Integer.parseInt(id)) {
-                    encontrado = u;
-                    break;
-                }
-            }
-            if (encontrado != null) {
-                ctx.json(encontrado);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Usuario no encontrado", ""));
-            }
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Usuario obj = servicio.obtenerUsuario(id);
+        if (obj != null) {
+            ctx.json(obj);
+        } else {
+            ctx.status(404).json(new mensaje<>("Usuario no encontrado", null));
+        }
+    }
 
-        app.put("/usuarios/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            Usuario actualizado = mapper.readValue(ctx.body(), Usuario.class);
-            actualizado.setId(Integer.parseInt(id));
-            for (int i = 0; i < UsuarioBD.usuarios.size(); i++) {
-                if (UsuarioBD.usuarios.get(i).getId() == Integer.parseInt(id)) {
-                    UsuarioBD.usuarios.set(i, actualizado);
-                    ctx.json(new mensaje("Usuario actualizado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Usuario no encontrado", ""));
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Usuario objActualizado = ctx.bodyAsClass(Usuario.class);
+        servicio.actualizarUsuario(id, objActualizado);
+        ctx.json(new mensaje<>("Usuario actualizado correctamente", objActualizado));
+    }
 
-        app.delete("/usuarios/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < UsuarioBD.usuarios.size(); i++) {
-                if (UsuarioBD.usuarios.get(i).getId() == Integer.parseInt(id)) {
-                    UsuarioBD.usuarios.remove(i);
-                    ctx.json(new mensaje("Usuario eliminado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Usuario no encontrado", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarUsuario(id);
+        ctx.json(new mensaje<>("Usuario eliminado correctamente", null));
+    }
+
+    private static void listar(Context ctx) {
+        List<Usuario> lista = servicio.obtenerUsuarios();
+        ctx.json(lista);
     }
 }

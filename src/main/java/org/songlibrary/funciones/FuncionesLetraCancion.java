@@ -1,73 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.LetraCancionBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.LetraCancion;
 import org.songlibrary.modelos.mensaje;
-
-import io.javalin.Javalin;
+import org.songlibrary.servicio.LetraCancionServicio;
+import java.util.List;
 
 public class FuncionesLetraCancion {
+    private static final LetraCancionServicio servicio = new LetraCancionServicio();
 
-    public static void FuncionesCRUD(Javalin app,ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/letras", FuncionesLetraCancion::agregar);
+        app.get("/letras/{id}", FuncionesLetraCancion::obtener);
+        app.put("/letras/{id}", FuncionesLetraCancion::actualizar);
+        app.delete("/letras/{id}", FuncionesLetraCancion::eliminar);
+        app.get("/letras", FuncionesLetraCancion::listar);
+    }
 
-        app.post("/letras", ctx -> {
-            ctx.contentType("application/json");
-            LetraCancion letra = mapper.readValue(ctx.body(), LetraCancion.class);
-            letra.setId(LetraCancionBD.autoId++);
-            LetraCancionBD.letras.add(letra);
-            ctx.json(new mensaje("Letra agregada", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        LetraCancion obj = ctx.bodyAsClass(LetraCancion.class);
+        servicio.guardarLetraCancion(obj);
+        ctx.status(201).json(new mensaje<>("Letra agregada correctamente", obj));
+    }
 
-        app.get("/letras", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(LetraCancionBD.letras);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        LetraCancion obj = servicio.obtenerLetraCancion(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Letra no encontrada", null));
+    }
 
-        app.get("/letras/{id}", ctx -> {
-            ctx.contentType("application/json");
-            int id = Integer.parseInt(ctx.pathParam("id"));
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        LetraCancion objActualizado = ctx.bodyAsClass(LetraCancion.class);
+        servicio.actualizarLetraCancion(id, objActualizado);
+        ctx.json(new mensaje<>("Letra actualizada correctamente", objActualizado));
+    }
 
-            for (LetraCancion l : LetraCancionBD.letras) {
-                if (l.getId() == id) {
-                    ctx.json(l);
-                }
-            }
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarLetraCancion(id);
+        ctx.json(new mensaje<>("Letra eliminada correctamente", null));
+    }
 
-            ctx.status(404);
-            ctx.json(new mensaje("Letra no encontrada", ""));
-        });
-
-        app.put("/letras/{id}", ctx -> {
-            ctx.contentType("application/json");
-            int id = Integer.parseInt(ctx.pathParam("id"));
-            LetraCancion actualizada = mapper.readValue(ctx.body(), LetraCancion.class);
-            actualizada.setId(id);
-
-            for (int i = 0; i < LetraCancionBD.letras.size(); i++) {
-                if (LetraCancionBD.letras.get(i).getId() == id) {
-                    LetraCancionBD.letras.set(i, actualizada);
-                    ctx.json(new mensaje("Letra actualizada", ""));
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Letra no encontrada", ""));
-        });
-
-        app.delete("/letras/{id}", ctx -> {
-            ctx.contentType("application/json");
-            int id = Integer.parseInt(ctx.pathParam("id"));
-
-            for (int i = 0; i < LetraCancionBD.letras.size(); i++) {
-                if (LetraCancionBD.letras.get(i).getId() == id) {
-                    LetraCancionBD.letras.remove(i);
-                    ctx.json(new mensaje("Letra eliminada", ""));
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Letra no encontrada", ""));
-        });
+    private static void listar(Context ctx) {
+        List<LetraCancion> lista = servicio.obtenerLetrasCancion();
+        ctx.json(lista);
     }
 }

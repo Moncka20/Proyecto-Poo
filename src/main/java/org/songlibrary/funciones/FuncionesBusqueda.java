@@ -1,79 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.BusquedaBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.Busqueda;
 import org.songlibrary.modelos.mensaje;
-import io.javalin.Javalin;
+import org.songlibrary.servicio.BusquedaServicio;
+import java.util.List;
 
 public class FuncionesBusqueda {
+    private static final BusquedaServicio servicio = new BusquedaServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/busquedas", FuncionesBusqueda::agregar);
+        app.get("/busquedas/{id}", FuncionesBusqueda::obtener);
+        app.put("/busquedas/{id}", FuncionesBusqueda::actualizar);
+        app.delete("/busquedas/{id}", FuncionesBusqueda::eliminar);
+        app.get("/busquedas", FuncionesBusqueda::listar);
+    }
 
-        app.post("/busquedas", ctx -> {
-            ctx.contentType("application/json");
-            Busqueda busqueda = mapper.readValue(ctx.body(), Busqueda.class);
-            busqueda.setId(BusquedaBD.autoId++);
-            BusquedaBD.busquedas.add(busqueda);
-            ctx.json(new mensaje("Búsqueda agregada", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        Busqueda obj = ctx.bodyAsClass(Busqueda.class);
+        servicio.guardarBusqueda(obj);
+        ctx.status(201).json(new mensaje<>("Busqueda agregada correctamente", obj));
+    }
 
-        app.get("/busquedas", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(BusquedaBD.busquedas);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Busqueda obj = servicio.obtenerBusqueda(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Busqueda no encontrada", null));
+    }
 
-        app.get("/busquedas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            Busqueda encontrada = null;
-            for (Busqueda b : BusquedaBD.busquedas) {
-                if (b.getId() == Integer.parseInt(id)) {
-                    encontrada = b;
-                    break;
-                }
-            }
-            if (encontrada != null) {
-                ctx.json(encontrada);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Búsqueda no encontrada", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Busqueda objActualizado = ctx.bodyAsClass(Busqueda.class);
+        servicio.actualizarBusqueda(id, objActualizado);
+        ctx.json(new mensaje<>("Busqueda actualizada correctamente", objActualizado));
+    }
 
-        app.put("/busquedas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            Busqueda actualizada = mapper.readValue(ctx.body(), Busqueda.class);
-            actualizada.setId(Integer.parseInt(id));
-            for (int i = 0; i < BusquedaBD.busquedas.size(); i++) {
-                if (BusquedaBD.busquedas.get(i).getId() == Integer.parseInt(id)) {
-                    BusquedaBD.busquedas.set(i, actualizada);
-                    ctx.json(new mensaje("Búsqueda actualizada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Búsqueda no encontrada", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarBusqueda(id);
+        ctx.json(new mensaje<>("Busqueda eliminada correctamente", null));
+    }
 
-        app.delete("/busquedas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < BusquedaBD.busquedas.size(); i++) {
-                if (BusquedaBD.busquedas.get(i).getId() == Integer.parseInt(id)) {
-                    BusquedaBD.busquedas.remove(i);
-                    ctx.json(new mensaje("Búsqueda eliminada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Búsqueda no encontrada", ""));
-        });
+    private static void listar(Context ctx) {
+        List<Busqueda> lista = servicio.obtenerBusquedas();
+        ctx.json(lista);
     }
 }

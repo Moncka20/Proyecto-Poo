@@ -1,14 +1,14 @@
 package org.songlibrary.modelos;
 
-public class ProductorMusical {
+public class Productor {
     private int id;
     private String nombre;
     private String nacionalidad;
     private int anioInicioCarrera;
 
-    public ProductorMusical() {}
+    public Productor() {}
 
-    public ProductorMusical(String nombre, String nacionalidad, int anioInicioCarrera) {
+    public Productor(String nombre, String nacionalidad, int anioInicioCarrera) {
         this.nombre = nombre;
         this.nacionalidad = nacionalidad;
         this.anioInicioCarrera = anioInicioCarrera;

@@ -1,81 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.HistorialReproduccionBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.HistorialReproduccion;
 import org.songlibrary.modelos.mensaje;
-
-
-import io.javalin.Javalin;
+import org.songlibrary.servicio.HistorialReproduccionServicio;
+import java.util.List;
 
 public class FuncionesHistorialReproduccion {
+    private static final HistorialReproduccionServicio servicio = new HistorialReproduccionServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/historiales", FuncionesHistorialReproduccion::agregar);
+        app.get("/historiales/{id}", FuncionesHistorialReproduccion::obtener);
+        app.put("/historiales/{id}", FuncionesHistorialReproduccion::actualizar);
+        app.delete("/historiales/{id}", FuncionesHistorialReproduccion::eliminar);
+        app.get("/historiales", FuncionesHistorialReproduccion::listar);
+    }
 
-        app.post("/historiales", ctx -> {
-            ctx.contentType("application/json");
-            HistorialReproduccion historial = mapper.readValue(ctx.body(), HistorialReproduccion.class);
-            historial.setId(HistorialReproduccionBD.autoId++);
-            HistorialReproduccionBD.historiales.add(historial);
-            ctx.json(new mensaje("Historial de reproducción agregado", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        HistorialReproduccion obj = ctx.bodyAsClass(HistorialReproduccion.class);
+        servicio.guardarHistorial(obj);
+        ctx.status(201).json(new mensaje<>("Historial agregado correctamente", obj));
+    }
 
-        app.get("/historiales", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(HistorialReproduccionBD.historiales);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        HistorialReproduccion obj = servicio.obtenerHistorial(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Historial no encontrado", null));
+    }
 
-        app.get("/historiales/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            HistorialReproduccion encontrado = null;
-            for (HistorialReproduccion h : HistorialReproduccionBD.historiales) {
-                if (h.getId() == Integer.parseInt(id)) {
-                    encontrado = h;
-                    break;
-                }
-            }
-            if (encontrado != null) {
-                ctx.json(encontrado);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Historial de reproducción no encontrado", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        HistorialReproduccion objActualizado = ctx.bodyAsClass(HistorialReproduccion.class);
+        servicio.actualizarHistorial(id, objActualizado);
+        ctx.json(new mensaje<>("Historial actualizado correctamente", objActualizado));
+    }
 
-        app.put("/historiales/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            HistorialReproduccion actualizado = mapper.readValue(ctx.body(), HistorialReproduccion.class);
-            actualizado.setId(Integer.parseInt(id));
-            for (int i = 0; i < HistorialReproduccionBD.historiales.size(); i++) {
-                if (HistorialReproduccionBD.historiales.get(i).getId() == Integer.parseInt(id)) {
-                    HistorialReproduccionBD.historiales.set(i, actualizado);
-                    ctx.json(new mensaje("Historial de reproducción actualizado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Historial de reproducción no encontrado", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarHistorial(id);
+        ctx.json(new mensaje<>("Historial eliminado correctamente", null));
+    }
 
-        app.delete("/historiales/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < HistorialReproduccionBD.historiales.size(); i++) {
-                if (HistorialReproduccionBD.historiales.get(i).getId() == Integer.parseInt(id)) {
-                    HistorialReproduccionBD.historiales.remove(i);
-                    ctx.json(new mensaje("Historial de reproducción eliminado", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Historial de reproducción no encontrado", ""));
-        });
+    private static void listar(Context ctx) {
+        List<HistorialReproduccion> lista = servicio.obtenerHistoriales();
+        ctx.json(lista);
     }
 }

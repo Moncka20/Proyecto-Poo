@@ -1,85 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.ListaDeReproduccionBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.ListaDeReproduccion;
 import org.songlibrary.modelos.mensaje;
-
-import io.javalin.Javalin;
+import org.songlibrary.servicio.ListaDeReproduccionServicio;
+import java.util.List;
 
 public class FuncionesListaDeReproduccion {
+    private static final ListaDeReproduccionServicio servicio = new ListaDeReproduccionServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/listas", FuncionesListaDeReproduccion::agregar);
+        app.get("/listas/{id}", FuncionesListaDeReproduccion::obtener);
+        app.put("/listas/{id}", FuncionesListaDeReproduccion::actualizar);
+        app.delete("/listas/{id}", FuncionesListaDeReproduccion::eliminar);
+        app.get("/listas", FuncionesListaDeReproduccion::listar);
+    }
 
-        // Crear una lista de reproducción
-        app.post("/listas", ctx -> {
-            ctx.contentType("application/json");
-            ListaDeReproduccion lista = mapper.readValue(ctx.body(), ListaDeReproduccion.class);
-            lista.setId(ListaDeReproduccionBD.autoId++);
-            ListaDeReproduccionBD.listas.add(lista);
-            ctx.json(new mensaje("Lista de reproducción agregada", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        ListaDeReproduccion obj = ctx.bodyAsClass(ListaDeReproduccion.class);
+        servicio.guardarLista(obj);
+        ctx.status(201).json(new mensaje<>("Lista de reproducción agregada correctamente", obj));
+    }
 
-        // Obtener todas las listas de reproducción
-        app.get("/listas", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(ListaDeReproduccionBD.listas);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        ListaDeReproduccion obj = servicio.obtenerLista(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Lista no encontrada", null));
+    }
 
-        // Obtener lista de reproducción por ID
-        app.get("/listas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            ListaDeReproduccion encontrada = null;
-            for (ListaDeReproduccion l : ListaDeReproduccionBD.listas) {
-                if (l.getId() == Integer.parseInt(id)) {
-                    encontrada = l;
-                    break;
-                }
-            }
-            if (encontrada != null) {
-                ctx.json(encontrada);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Lista de reproducción no encontrada", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        ListaDeReproduccion objActualizado = ctx.bodyAsClass(ListaDeReproduccion.class);
+        servicio.actualizarLista(id, objActualizado);
+        ctx.json(new mensaje<>("Lista de reproducción actualizada correctamente", objActualizado));
+    }
 
-        // Actualizar lista de reproducción
-        app.put("/listas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            ListaDeReproduccion actualizada = mapper.readValue(ctx.body(), ListaDeReproduccion.class);
-            actualizada.setId(Integer.parseInt(id));
-            for (int i = 0; i < ListaDeReproduccionBD.listas.size(); i++) {
-                if (ListaDeReproduccionBD.listas.get(i).getId() == Integer.parseInt(id)) {
-                    ListaDeReproduccionBD.listas.set(i, actualizada);
-                    ctx.json(new mensaje("Lista de reproducción actualizada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Lista de reproducción no encontrada", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarLista(id);
+        ctx.json(new mensaje<>("Lista de reproducción eliminada correctamente", null));
+    }
 
-        // Eliminar lista de reproducción
-        app.delete("/listas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < ListaDeReproduccionBD.listas.size(); i++) {
-                if (ListaDeReproduccionBD.listas.get(i).getId() == Integer.parseInt(id)) {
-                    ListaDeReproduccionBD.listas.remove(i);
-                    ctx.json(new mensaje("Lista de reproducción eliminada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Lista de reproducción no encontrada", ""));
-        });
+    private static void listar(Context ctx) {
+        List<ListaDeReproduccion> lista = servicio.obtenerListas();
+        ctx.json(lista);
     }
 }

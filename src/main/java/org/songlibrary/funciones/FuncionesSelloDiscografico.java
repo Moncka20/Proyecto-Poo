@@ -1,95 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.SelloDiscograficoBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.SelloDiscografico;
 import org.songlibrary.modelos.mensaje;
-
-import io.javalin.Javalin;
+import org.songlibrary.servicio.SelloDiscograficoServicio;
+import java.util.List;
 
 public class FuncionesSelloDiscografico {
+    private static final SelloDiscograficoServicio servicio = new SelloDiscograficoServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/sellos", FuncionesSelloDiscografico::agregar);
+        app.get("/sellos/{id}", FuncionesSelloDiscografico::obtener);
+        app.put("/sellos/{id}", FuncionesSelloDiscografico::actualizar);
+        app.delete("/sellos/{id}", FuncionesSelloDiscografico::eliminar);
+        app.get("/sellos", FuncionesSelloDiscografico::listar);
+    }
 
-        // Crear sello
-        app.post("/sellos", ctx -> {
-            ctx.contentType("application/json");
-            SelloDiscografico sello = mapper.readValue(ctx.body(), SelloDiscografico.class);
-            sello.setId(SelloDiscograficoBD.autoId++);
-            SelloDiscograficoBD.sellos.add(sello);
-            ctx.json(new mensaje("Sello agregado", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        SelloDiscografico obj = ctx.bodyAsClass(SelloDiscografico.class);
+        servicio.guardarSello(obj);
+        ctx.status(201).json(new mensaje<>("Sello agregado correctamente", obj));
+    }
 
-        // Obtener todos los sellos
-        app.get("/sellos", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(SelloDiscograficoBD.sellos);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        SelloDiscografico obj = servicio.obtenerSello(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Sello no encontrado", null));
+    }
 
-        // Obtener sello por ID
-        app.get("/sellos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            try {
-                int idInt = Integer.parseInt(id);
-                for (SelloDiscografico s : SelloDiscograficoBD.sellos) {
-                    if (s.getId() == idInt) {
-                        ctx.json(s);
-                        return;
-                    }
-                }
-                ctx.status(404);
-                ctx.json(new mensaje("Sello no encontrado", ""));
-            } catch (NumberFormatException e) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID inválido", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        SelloDiscografico objActualizado = ctx.bodyAsClass(SelloDiscografico.class);
+        servicio.actualizarSello(id, objActualizado);
+        ctx.json(new mensaje<>("Sello actualizado correctamente", objActualizado));
+    }
 
-        // Actualizar sello
-        app.put("/sellos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            try {
-                int idInt = Integer.parseInt(id);
-                SelloDiscografico actualizado = mapper.readValue(ctx.body(), SelloDiscografico.class);
-                actualizado.setId(idInt);
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarSello(id);
+        ctx.json(new mensaje<>("Sello eliminado correctamente", null));
+    }
 
-                for (int i = 0; i < SelloDiscograficoBD.sellos.size(); i++) {
-                    if (SelloDiscograficoBD.sellos.get(i).getId() == idInt) {
-                        SelloDiscograficoBD.sellos.set(i, actualizado);
-                        ctx.json(new mensaje("Sello actualizado", ""));
-                        return;
-                    }
-                }
-
-                ctx.status(404);
-                ctx.json(new mensaje("Sello no encontrado", ""));
-            } catch (NumberFormatException e) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID inválido", ""));
-            }
-        });
-
-        // Eliminar sello
-        app.delete("/sellos/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            try {
-                int idInt = Integer.parseInt(id);
-                for (int i = 0; i < SelloDiscograficoBD.sellos.size(); i++) {
-                    if (SelloDiscograficoBD.sellos.get(i).getId() == idInt) {
-                        SelloDiscograficoBD.sellos.remove(i);
-                        ctx.json(new mensaje("Sello eliminado", ""));
-                        return;
-                    }
-                }
-                ctx.status(404);
-                ctx.json(new mensaje("Sello no encontrado", ""));
-            } catch (NumberFormatException e) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID inválido", ""));
-            }
-        });
+    private static void listar(Context ctx) {
+        List<SelloDiscografico> lista = servicio.obtenerSellos();
+        ctx.json(lista);
     }
 }

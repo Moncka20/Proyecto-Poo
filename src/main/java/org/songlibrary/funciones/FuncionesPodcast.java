@@ -1,92 +1,57 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.modelos.Podcast;
-import org.songlibrary.BD.PodcastBD;
-import org.songlibrary.modelos.mensaje;
-
 import io.javalin.Javalin;
+import io.javalin.http.Context;
+import org.songlibrary.modelos.Podcast;
+import org.songlibrary.modelos.mensaje;
+import org.songlibrary.servicio.PodcastServicio;
+
+import java.util.List;
 
 public class FuncionesPodcast {
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    private static final PodcastServicio servicio = new PodcastServicio();
 
-        // Crear un podcast
-        app.post("/podcasts", ctx -> {
-            ctx.contentType("application/json");
-            Podcast podcast = mapper.readValue(ctx.body(), Podcast.class);
-            podcast.setId(PodcastBD.autoId++);
-            PodcastBD.podcasts.add(podcast);
-            ctx.json(new mensaje("Podcast agregado", ctx.body()));
-        });
+    public static void configurar(Javalin app) {
+        app.post("/podcasts", FuncionesPodcast::agregar);
+        app.get("/podcasts/{id}", FuncionesPodcast::obtener);
+        app.put("/podcasts/{id}", FuncionesPodcast::actualizar);
+        app.delete("/podcasts/{id}", FuncionesPodcast::eliminar);
+        app.get("/podcasts", FuncionesPodcast::listar);
+    }
 
-        // Obtener todos los podcasts
-        app.get("/podcasts", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(PodcastBD.podcasts);
-        });
+    private static void agregar(Context ctx) {
+        Podcast obj = ctx.bodyAsClass(Podcast.class);
+        servicio.guardarPodcast(obj);
+        mensaje<Podcast> respuesta = new mensaje<>("Podcast agregado correctamente", obj);
+        ctx.status(201).json(respuesta);
+    }
 
-        // Obtener podcast por ID
-        app.get("/podcasts/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Podcast obj = servicio.obtenerPodcast(id);
+        if (obj != null) {
+            ctx.json(obj);
+        } else {
+            ctx.status(404).json(new mensaje<>("Podcast no encontrado", null));
+        }
+    }
 
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Podcast objActualizado = ctx.bodyAsClass(Podcast.class);
+        servicio.actualizarPodcast(id, objActualizado);
+        ctx.json(new mensaje<>("Podcast actualizado correctamente", objActualizado));
+    }
 
-            Podcast encontrado = null;
-            for (Podcast p : PodcastBD.podcasts) {
-                if (p.getId() == Integer.parseInt(id)) {
-                    encontrado = p;
-                    break;
-                }
-            }
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarPodcast(id);
+        ctx.json(new mensaje<>("Podcast eliminado correctamente", null));
+    }
 
-            if (encontrado != null) {
-                ctx.json(encontrado);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Podcast no encontrado", ""));
-            }
-        });
-
-        // Actualizar podcast
-        app.put("/podcasts/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            Podcast actualizado = mapper.readValue(ctx.body(), Podcast.class);
-            actualizado.setId(Integer.parseInt(id));
-
-            for (int i = 0; i < PodcastBD.podcasts.size(); i++) {
-                if (PodcastBD.podcasts.get(i).getId() == Integer.parseInt(id)) {
-                    PodcastBD.podcasts.set(i, actualizado);
-                    ctx.json(new mensaje("Podcast actualizado", ""));
-                    return;
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Podcast no encontrado", ""));
-        });
-
-        // Eliminar podcast
-        app.delete("/podcasts/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-
-            for (int i = 0; i < PodcastBD.podcasts.size(); i++) {
-                if (PodcastBD.podcasts.get(i).getId() == Integer.parseInt(id)) {
-                    PodcastBD.podcasts.remove(i);
-                    ctx.json(new mensaje("Podcast eliminado", ""));
-                    return;
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Podcast no encontrado", ""));
-        });
+    private static void listar(Context ctx) {
+        List<Podcast> lista = servicio.obtenerPodcasts();
+        ctx.json(lista);
     }
 }

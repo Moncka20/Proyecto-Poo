@@ -1,90 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.ArtistaBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.Artista;
 import org.songlibrary.modelos.mensaje;
-
-import io.javalin.Javalin;
+import org.songlibrary.servicio.ArtistaServicio;
+import java.util.List;
 
 public class FuncionesArtista {
+    private static final ArtistaServicio servicio = new ArtistaServicio();
 
-    public static void FuncionesCRUD(Javalin app,ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/artistas", FuncionesArtista::agregar);
+        app.get("/artistas/{id}", FuncionesArtista::obtener);
+        app.put("/artistas/{id}", FuncionesArtista::actualizar);
+        app.delete("/artistas/{id}", FuncionesArtista::eliminar);
+        app.get("/artistas", FuncionesArtista::listar);
+    }
 
-        // Crear un artista
-        app.post("/artistas", ctx -> {
-            ctx.contentType("application/json");
-            Artista artista = mapper.readValue(ctx.body(), Artista.class);
-            artista.setId(ArtistaBD.autoId++);
-            ArtistaBD.artistas.add(artista);
-            ctx.json(new mensaje("Artista agregado", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        Artista obj = ctx.bodyAsClass(Artista.class);
+        servicio.guardarArtista(obj);
+        ctx.status(201).json(new mensaje<>("Artista agregado correctamente", obj));
+    }
 
-        // Obtener todos los artistas
-        app.get("/artistas", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(ArtistaBD.artistas);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Artista obj = servicio.obtenerArtista(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Artista no encontrado", null));
+    }
 
-        // Obtener artista por ID
-        app.get("/artistas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Artista objActualizado = ctx.bodyAsClass(Artista.class);
+        servicio.actualizarArtista(id, objActualizado);
+        ctx.json(new mensaje<>("Artista actualizado correctamente", objActualizado));
+    }
 
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-            }
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarArtista(id);
+        ctx.json(new mensaje<>("Artista eliminado correctamente", null));
+    }
 
-            Artista artista = null;
-            for (Artista a : ArtistaBD.artistas) {
-                if (a.getId() == Integer.parseInt(id)) {
-                    artista = a;
-                    break;
-                }
-            }
-
-            if (artista != null) {
-                ctx.json(artista);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Artista no encontrado", ""));
-            }
-        });
-
-        // Actualizar artista
-        app.put("/artistas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            Artista actualizado = mapper.readValue(ctx.body(), Artista.class);
-            actualizado.setId(Integer.parseInt(id));
-
-            for (int i = 0; i < ArtistaBD.artistas.size(); i++) {
-                if (ArtistaBD.artistas.get(i).getId() == Integer.parseInt(id)) {
-                    ArtistaBD.artistas.set(i, actualizado);
-                    ctx.json(new mensaje("Artista actualizado", ""));
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Artista no encontrado", ""));
-        });
-
-        // Eliminar artista
-        app.delete("/artistas/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-
-            for (int i = 0; i < ArtistaBD.artistas.size(); i++) {
-                if (ArtistaBD.artistas.get(i).getId() == Integer.parseInt(id)) {
-                    ArtistaBD.artistas.remove(i);
-                    ctx.json(new mensaje("Artista eliminado", ""));
-                }
-            }
-
-            ctx.status(404);
-            ctx.json(new mensaje("Artista no encontrado", ""));
-        });
+    private static void listar(Context ctx) {
+        List<Artista> lista = servicio.obtenerArtista();
+        ctx.json(lista);
     }
 }
-

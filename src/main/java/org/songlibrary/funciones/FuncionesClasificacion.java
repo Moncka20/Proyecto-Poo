@@ -1,79 +1,51 @@
 package org.songlibrary.funciones;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.songlibrary.BD.ClasificacionBD;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.songlibrary.modelos.Clasificacion;
 import org.songlibrary.modelos.mensaje;
-import io.javalin.Javalin;
+import org.songlibrary.servicio.ClasificacionServicio;
+import java.util.List;
 
 public class FuncionesClasificacion {
+    private static final ClasificacionServicio servicio = new ClasificacionServicio();
 
-    public static void FuncionesCRUD(Javalin app, ObjectMapper mapper) {
+    public static void configurar(Javalin app) {
+        app.post("/clasificaciones", FuncionesClasificacion::agregar);
+        app.get("/clasificaciones/{id}", FuncionesClasificacion::obtener);
+        app.put("/clasificaciones/{id}", FuncionesClasificacion::actualizar);
+        app.delete("/clasificaciones/{id}", FuncionesClasificacion::eliminar);
+        app.get("/clasificaciones", FuncionesClasificacion::listar);
+    }
 
-        app.post("/clasificaciones", ctx -> {
-            ctx.contentType("application/json");
-            Clasificacion clasificacion = mapper.readValue(ctx.body(), Clasificacion.class);
-            clasificacion.setId(ClasificacionBD.autoId++);
-            ClasificacionBD.clasificaciones.add(clasificacion);
-            ctx.json(new mensaje("Clasificación agregada", ctx.body()));
-        });
+    private static void agregar(Context ctx) {
+        Clasificacion obj = ctx.bodyAsClass(Clasificacion.class);
+        servicio.guardarClasificacion(obj);
+        ctx.status(201).json(new mensaje<>("Clasificación agregada correctamente", obj));
+    }
 
-        app.get("/clasificaciones", ctx -> {
-            ctx.contentType("application/json");
-            ctx.json(ClasificacionBD.clasificaciones);
-        });
+    private static void obtener(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Clasificacion obj = servicio.obtenerClasificacion(id);
+        if (obj != null) ctx.json(obj);
+        else ctx.status(404).json(new mensaje<>("Clasificación no encontrada", null));
+    }
 
-        app.get("/clasificaciones/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            if (id == null) {
-                ctx.status(400);
-                ctx.json(new mensaje("ID no proporcionado", ""));
-                return;
-            }
-            Clasificacion encontrada = null;
-            for (Clasificacion c : ClasificacionBD.clasificaciones) {
-                if (c.getId() == Integer.parseInt(id)) {
-                    encontrada = c;
-                    break;
-                }
-            }
-            if (encontrada != null) {
-                ctx.json(encontrada);
-            } else {
-                ctx.status(404);
-                ctx.json(new mensaje("Clasificación no encontrada", ""));
-            }
-        });
+    private static void actualizar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Clasificacion objActualizado = ctx.bodyAsClass(Clasificacion.class);
+        servicio.actualizarClasificacion(id, objActualizado);
+        ctx.json(new mensaje<>("Clasificación actualizada correctamente", objActualizado));
+    }
 
-        app.put("/clasificaciones/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            Clasificacion actualizada = mapper.readValue(ctx.body(), Clasificacion.class);
-            actualizada.setId(Integer.parseInt(id));
-            for (int i = 0; i < ClasificacionBD.clasificaciones.size(); i++) {
-                if (ClasificacionBD.clasificaciones.get(i).getId() == Integer.parseInt(id)) {
-                    ClasificacionBD.clasificaciones.set(i, actualizada);
-                    ctx.json(new mensaje("Clasificación actualizada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Clasificación no encontrada", ""));
-        });
+    private static void eliminar(Context ctx) {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        servicio.eliminarClasificacion(id);
+        ctx.json(new mensaje<>("Clasificación eliminada correctamente", null));
+    }
 
-        app.delete("/clasificaciones/{id}", ctx -> {
-            ctx.contentType("application/json");
-            String id = ctx.pathParam("id");
-            for (int i = 0; i < ClasificacionBD.clasificaciones.size(); i++) {
-                if (ClasificacionBD.clasificaciones.get(i).getId() == Integer.parseInt(id)) {
-                    ClasificacionBD.clasificaciones.remove(i);
-                    ctx.json(new mensaje("Clasificación eliminada", ""));
-                    return;
-                }
-            }
-            ctx.status(404);
-            ctx.json(new mensaje("Clasificación no encontrada", ""));
-        });
+    private static void listar(Context ctx) {
+        List<Clasificacion> lista = servicio.obtenerClasificaciones();
+        ctx.json(lista);
     }
 }
